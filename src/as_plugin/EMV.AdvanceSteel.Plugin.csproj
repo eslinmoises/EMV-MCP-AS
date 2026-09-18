@@ -39,6 +39,16 @@
       <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASObjectsMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASObjectsMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASObjectsMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="ASCADLinkMgd">
+      <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASCADLinkMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASCADLinkMgd.dll</HintPath>
+      <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASCADLinkMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASCADLinkMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASCADLinkMgd.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ASProfilesMgd">
+      <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASProfilesMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASProfilesMgd.dll</HintPath>
+      <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASProfilesMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASProfilesMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASProfilesMgd.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ASGeometryMgd">
       <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASGeometryMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASGeometryMgd.dll</HintPath>
       <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASGeometryMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASGeometryMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASGeometryMgd.dll</HintPath>

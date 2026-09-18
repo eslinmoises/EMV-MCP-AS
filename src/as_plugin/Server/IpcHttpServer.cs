@@ -86,7 +86,7 @@ namespace EMV.AdvanceSteel.Plugin.Server
 
             try
             {
-                string path = req.Url?.AbsolutePath ?? "";
+                string path = req.Url?.PathAndQuery ?? req.Url?.AbsolutePath ?? "";
                 string method = req.HttpMethod;
                 string body = "";
 

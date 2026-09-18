@@ -105,3 +105,14 @@ A 3D coordinate array `[X, Y, Z]` in millimeters (or inches if imperial model).
   "warning": null
 }
 ```
+
+---
+
+## 4. Advance Steel 2026 .NET API Mapping Reference
+As extracted by assembly reflection:
+- **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
+- **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`
+- **Welds**: `Autodesk.AdvanceSteel.Modelling.WeldPattern`
+- **Location**: `Autodesk.AdvanceSteel.ConstructionTypes.AtomicElement.eAssemblyLocation` (`kInShop`, `kOnSite`)
+- **Assembly & Main Part**: Managed via `AtomicElement.IsMainPart` and connection graphs (`GetConnectedObjects(..., kInShop)`).
+

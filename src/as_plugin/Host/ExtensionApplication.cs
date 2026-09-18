@@ -4,6 +4,10 @@ using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using EMV.AdvanceSteel.Plugin.Server;
 
+// ImplicitUsings + UseWindowsForms make a bare 'Application' ambiguous with
+// System.Windows.Forms.Application, so the AutoCAD one is addressed through an alias.
+using AcApplication = Autodesk.AutoCAD.ApplicationServices.Application;
+
 [assembly: ExtensionApplication(typeof(EMV.AdvanceSteel.Plugin.Host.ExtensionApplication))]
 
 namespace EMV.AdvanceSteel.Plugin.Host
@@ -16,7 +20,7 @@ namespace EMV.AdvanceSteel.Plugin.Host
         {
             try
             {
-                var doc = Application.DocumentManager.MdiActiveDocument;
+                var doc = AcApplication.DocumentManager.MdiActiveDocument;
                 var ed = doc?.Editor;
                 ed?.WriteMessage("\n[EMV-MCP-AS] Loading Advance Steel MCP Extension (.NET 8)...\n");
 
@@ -27,7 +31,7 @@ namespace EMV.AdvanceSteel.Plugin.Host
             }
             catch (System.Exception ex)
             {
-                var ed = Application.DocumentManager.MdiActiveDocument?.Editor;
+                var ed = AcApplication.DocumentManager.MdiActiveDocument?.Editor;
                 ed?.WriteMessage($"\n[EMV-MCP-AS] Error starting IPC Server: {ex.Message}\n");
             }
         }
@@ -48,7 +52,7 @@ namespace EMV.AdvanceSteel.Plugin.Host
         [CommandMethod("EMV_MCP_STATUS")]
         public void StatusCommand()
         {
-            var ed = Application.DocumentManager.MdiActiveDocument?.Editor;
+            var ed = AcApplication.DocumentManager.MdiActiveDocument?.Editor;
             bool running = _ipcServer?.IsRunning ?? false;
             ed?.WriteMessage($"\n[EMV-MCP-AS] Server is {(running ? "ONLINE (port 5055)" : "OFFLINE")}\n");
         }
@@ -56,7 +60,7 @@ namespace EMV.AdvanceSteel.Plugin.Host
         [CommandMethod("EMV_MCP_RESTART")]
         public void RestartCommand()
         {
-            var ed = Application.DocumentManager.MdiActiveDocument?.Editor;
+            var ed = AcApplication.DocumentManager.MdiActiveDocument?.Editor;
             ed?.WriteMessage("\n[EMV-MCP-AS] Restarting IPC Server...\n");
             _ipcServer?.Stop();
             _ipcServer = new IpcHttpServer(port: 5055);

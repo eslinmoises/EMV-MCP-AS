@@ -14,16 +14,23 @@ def get_selected_elements(client: AdvanceSteelIpcClient) -> Dict[str, Any]:
     return client.get("elements/selected")
 
 
+import urllib.parse
+
+
 def verify_welds_and_assemblies(
     client: AdvanceSteelIpcClient, element_handles: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """Inspect welds (workshop vs. site) and verify proper assembly grouping."""
-    return client.get("assembly/verify-welds")
+    endpoint = "assembly/verify-welds"
+    if element_handles:
+        endpoint += f"?element_handles={','.join(element_handles)}"
+    return client.get(endpoint)
 
 
 def inspect_main_part(client: AdvanceSteelIpcClient, assembly_or_element_handle: str) -> Dict[str, Any]:
     """Identify and validate the Main Part of a shop assembly."""
-    return client.get("assembly/main-part")
+    encoded = urllib.parse.quote(assembly_or_element_handle)
+    return client.get(f"assembly/main-part?assembly_or_element_handle={encoded}")
 
 
 def get_ucs_and_grids(client: AdvanceSteelIpcClient) -> Dict[str, Any]:
