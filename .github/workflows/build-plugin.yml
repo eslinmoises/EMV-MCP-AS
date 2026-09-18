@@ -1,0 +1,25 @@
+name: Build Advance Steel Plugin (.NET 8)
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore src/as_plugin/EMV.AdvanceSteel.Plugin.csproj
+
+    # Note: Full compilation against Autodesk DLLs requires Advance Steel reference assemblies.
+    # On CI, we ensure NuGet dependencies and project configuration restore cleanly.
