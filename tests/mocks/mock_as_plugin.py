@@ -43,6 +43,10 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             self._send_envelope(data=MOCK_MAIN_PART_INSPECTION)
         elif path == "/api/v1/spatial/ucs-grids":
             self._send_envelope(data=MOCK_UCS_AND_GRIDS)
+        elif path == "/api/v1/audit/assembly-integrity":
+            self._send_envelope(data={"findings": [], "orphaned_parts": 0, "total_parts_scanned": 12})
+        elif path == "/api/v1/audit/clashes":
+            self._send_envelope(data={"clash_count": 0, "clashes": [], "method": "AABB_SweepAndPrune"})
         elif path == "/api/v1/viewport/capture":
             # 1x1 transparent PNG Base64
             dummy_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="

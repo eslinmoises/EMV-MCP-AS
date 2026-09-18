@@ -51,6 +51,30 @@ class TestMcpTools(unittest.TestCase):
         self.assertIn("active_ucs", res["data"])
         self.assertEqual(len(res["data"]["grid_axes"]), 4)
 
+    def test_get_ucs_and_grids_payload_schema(self):
+        """Pins the keys SpatialCommandHandler must emit for spatial/ucs-grids.
+
+        An agent placing geometry needs the UCS axes to know whether its coordinates are
+        WCS or UCS (rules/advance-steel-modeling.md §1), so a handler that drops one of
+        these keys is a silent correctness bug. Extra keys are allowed; missing ones are not.
+        """
+        data = diagnostic_tools.get_ucs_and_grids(self.client)["data"]
+
+        for axis_key in ("origin", "x_axis", "y_axis", "z_axis"):
+            self.assertIn(axis_key, data["active_ucs"])
+            self.assertEqual(len(data["active_ucs"][axis_key]), 3)
+
+        self.assertTrue(data["grid_axes"], "a model with grids must report its axes")
+        for axis in data["grid_axes"]:
+            self.assertIn("name", axis)
+            self.assertEqual(len(axis["start"]), 3)
+            self.assertEqual(len(axis["end"]), 3)
+
+        self.assertTrue(data["levels"], "at least the ±0.00 model datum must be reported")
+        for level in data["levels"]:
+            self.assertIn("name", level)
+            self.assertIsInstance(level["elevation"], (int, float))
+
     def test_capture_viewport(self):
         res = diagnostic_tools.capture_viewport(self.client)
         self.assertTrue(res["success"])
@@ -86,6 +110,18 @@ class TestMcpTools(unittest.TestCase):
         res = scripting_tools.execute_csharp_script(self.client, script)
         self.assertTrue(res["success"])
         self.assertIn("Roslyn", res["data"]["output"])
+
+
+    def test_audit_assembly_integrity(self):
+        res = diagnostic_tools.audit_assembly_integrity(self.client)
+        self.assertTrue(res["success"])
+        self.assertIn("orphaned_parts", res["data"])
+
+    def test_detect_clashes_and_clearances(self):
+        res = diagnostic_tools.detect_clashes_and_clearances(self.client)
+        self.assertTrue(res["success"])
+        self.assertIn("clashes", res["data"])
+        self.assertEqual(res["data"]["method"], "AABB_SweepAndPrune")
 
 
 if __name__ == "__main__":

@@ -47,6 +47,16 @@ try:
         return diagnostic_tools.capture_viewport(client)
 
     @mcp.tool()
+    def audit_assembly_integrity(element_handles: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Audit the model for orphaned workshop plates/stiffeners and unnumbered parts."""
+        return diagnostic_tools.audit_assembly_integrity(client, element_handles)
+
+    @mcp.tool()
+    def detect_clashes_and_clearances(element_handles: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Detect 3D spatial collisions and clearances between structural members."""
+        return diagnostic_tools.detect_clashes_and_clearances(client, element_handles)
+
+    @mcp.tool()
     def create_straight_beam(
         start_point: List[float],
         end_point: List[float],

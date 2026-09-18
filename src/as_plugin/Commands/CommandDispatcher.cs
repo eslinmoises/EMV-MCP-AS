@@ -310,6 +310,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "assembly/verify-welds" => WeldCommandHandler.VerifyWelds(ctx),
             "assembly/main-part" => AssemblyCommandHandler.InspectMainPart(ctx),
             "assembly/set-main-part" => AssemblyCommandHandler.SetMainPart(ctx),
+            "spatial/ucs-grids" => SpatialCommandHandler.GetUcsAndGrids(ctx),
+            "audit/assembly-integrity" => AuditCommandHandler.AuditAssemblyIntegrity(ctx),
+            "audit/clashes" => AuditCommandHandler.DetectClashes(ctx),
             "viewport/capture" => ViewportCommandHandler.Capture(ctx),
             "script/execute" => ScriptRoute(ctx),
             _ => CommandResult.Fail("ENDPOINT_NOT_FOUND", $"Unknown endpoint: {ctx.Path}", 404)
@@ -336,6 +339,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "assembly/verify-welds",
             "assembly/main-part",
             "assembly/set-main-part",
+            "spatial/ucs-grids",
+            "audit/assembly-integrity",
+            "audit/clashes",
             "viewport/capture",
             "script/execute"
         };

@@ -41,3 +41,23 @@ def get_ucs_and_grids(client: AdvanceSteelIpcClient) -> Dict[str, Any]:
 def capture_viewport(client: AdvanceSteelIpcClient) -> Dict[str, Any]:
     """Capture a screenshot of the 3D viewport for multimodal visual verification."""
     return client.get("viewport/capture")
+
+
+def audit_assembly_integrity(
+    client: AdvanceSteelIpcClient, element_handles: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """Audit the model for orphaned workshop plates/stiffeners and unnumbered parts."""
+    endpoint = "audit/assembly-integrity"
+    if element_handles:
+        endpoint += f"?element_handles={','.join(element_handles)}"
+    return client.get(endpoint)
+
+
+def detect_clashes_and_clearances(
+    client: AdvanceSteelIpcClient, element_handles: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """Detect 3D spatial collisions and clearances between structural members."""
+    endpoint = "audit/clashes"
+    if element_handles:
+        endpoint += f"?element_handles={','.join(element_handles)}"
+    return client.get(endpoint)
