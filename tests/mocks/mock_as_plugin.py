@@ -86,6 +86,21 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             self._send_envelope(
                 data={"assembly_mark": "C1", "main_part_handle": new_handle, "success": True}
             )
+        elif path == "/api/v1/elements/joint":
+            joint_type = body_json.get("joint_type", "BasePlate")
+            self._send_envelope(
+                data={"handle": "JOINT_303", "joint_type": joint_type, "created_objects": ["PLATE_202", "WELD_01"]}
+            )
+        elif path == "/api/v1/elements/cut":
+            cut_type = body_json.get("cut_type", "shortening")
+            self._send_envelope(
+                data={"handle": "CUT_404", "cut_type": cut_type, "length_before_mm": 4000.0, "length_mm": 3900.0}
+            )
+        elif path == "/api/v1/elements/modify":
+            handle = body_json.get("handle", "BEAM_101")
+            self._send_envelope(
+                data={"handle": handle, "modified_properties": body_json, "success": True}
+            )
         elif path == "/api/v1/script/execute":
             code = body_json.get("script_code", "")
             if "throw" in code or "Exception" in code:

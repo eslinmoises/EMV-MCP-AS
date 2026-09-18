@@ -307,6 +307,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/selected" => SelectionQuery.GetSelectedElements(ctx),
             "elements/beam" => BeamCommandHandler.Create(ctx),
             "elements/plate" => PlateCommandHandler.Create(ctx),
+            "elements/joint" => JointCommandHandler.Create(ctx),
+            "elements/cut" => FeatureCommandHandler.Apply(ctx),
+            "elements/modify" => ModifyCommandHandler.Modify(ctx),
             "assembly/verify-welds" => WeldCommandHandler.VerifyWelds(ctx),
             "assembly/main-part" => AssemblyCommandHandler.InspectMainPart(ctx),
             "assembly/set-main-part" => AssemblyCommandHandler.SetMainPart(ctx),
@@ -336,6 +339,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/selected",
             "elements/beam",
             "elements/plate",
+            "elements/joint",
+            "elements/cut",
+            "elements/modify",
             "assembly/verify-welds",
             "assembly/main-part",
             "assembly/set-main-part",
@@ -567,6 +573,52 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Resolves a handle onto a model object of the kind the caller needs. The three failure
+        /// modes are kept apart on purpose, because the agent fixes each one differently: a missing
+        /// parameter is a malformed request, a handle nobody knows means the agent must re-read the
+        /// model, and a handle that names the wrong kind of object means it must pick another
+        /// element.
+        /// </summary>
+        internal static bool TryResolve<T>(
+            string? handle, string parameterName, out T element, out CommandResult? error)
+            where T : class
+        {
+            element = null!;
+            error = null;
+
+            if (string.IsNullOrWhiteSpace(handle))
+            {
+                error = CommandResult.Fail(
+                    "MISSING_PARAMETER", $"Parameter '{parameterName}' is required.", 400,
+                    $"Send the Advance Steel handle of the element, e.g. {{\"{parameterName}\": \"1B2C\"}}.");
+                return false;
+            }
+
+            var resolved = OpenByHandle(handle);
+            if (resolved == null)
+            {
+                error = CommandResult.Fail(
+                    "HANDLE_NOT_FOUND", $"No Advance Steel object has handle '{handle}'.", 404,
+                    "Call get_selected_elements to obtain valid handles from the current model.");
+                return false;
+            }
+
+            if (resolved is not T typed)
+            {
+                error = CommandResult.Fail(
+                    "INVALID_ELEMENT_TYPE",
+                    $"Handle '{handle}' is a {TypeName(resolved)}, which cannot be used as a {typeof(T).Name}.",
+                    422,
+                    "Pick an element of the required kind; get_selected_elements reports the type behind "
+                    + "every handle.");
+                return false;
+            }
+
+            element = typed;
+            return true;
         }
 
         internal static Autodesk.AdvanceSteel.CADAccess.FilerObject? Open(

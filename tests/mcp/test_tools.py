@@ -1,4 +1,7 @@
+import re
 import unittest
+from pathlib import Path
+
 from src.mcp_server.client.ipc_client import AdvanceSteelIpcClient
 from src.mcp_server.tools import diagnostic_tools, modeling_tools, scripting_tools
 from tests.mocks.mock_as_plugin import MockAdvanceSteelServer
@@ -111,6 +114,39 @@ class TestMcpTools(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertIn("Roslyn", res["data"]["output"])
 
+    def test_create_standard_joint(self):
+        res = modeling_tools.create_standard_joint(
+            self.client,
+            primary_handle="BEAM_101",
+            joint_type="BasePlate",
+            secondary_handles=["BEAM_102"],
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "JOINT_303")
+        self.assertEqual(res["data"]["joint_type"], "BasePlate")
+
+    def test_apply_beam_cut_or_notch(self):
+        res = modeling_tools.apply_beam_cut_or_notch(
+            self.client,
+            beam_handle="BEAM_101",
+            cut_type="shortening",
+            cut_length_mm=100.0,
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "CUT_404")
+        self.assertEqual(res["data"]["cut_type"], "shortening")
+
+    def test_modify_element_properties(self):
+        res = modeling_tools.modify_element_properties(
+            self.client,
+            handle="BEAM_101",
+            material="S355JR",
+            model_role="Rafter",
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "BEAM_101")
+        self.assertTrue(res["data"]["success"])
+
 
     def test_audit_assembly_integrity(self):
         res = diagnostic_tools.audit_assembly_integrity(self.client)
@@ -122,6 +158,84 @@ class TestMcpTools(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertIn("clashes", res["data"])
         self.assertEqual(res["data"]["method"], "AABB_SweepAndPrune")
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+PLUGIN_COMMANDS = REPO_ROOT / "src" / "as_plugin" / "Commands"
+DISPATCHER = PLUGIN_COMMANDS / "CommandDispatcher.cs"
+
+
+class TestDispatcherRouting(unittest.TestCase):
+    """Guards the two-place route registration in CommandDispatcher.cs.
+
+    A route has to be listed twice: once in ``KnownRoutes`` (the gate that answers
+    ENDPOINT_NOT_FOUND before any transaction is opened) and once in the ``Route`` switch
+    (which picks the handler). Registering it in only one of them is silent — the endpoint
+    either 404s despite having a handler, or falls through the switch to a second 404 after
+    a transaction was already opened. No AutoCAD is needed to catch that, so it is checked
+    here rather than left to a manual smoke test on a workstation with Advance Steel.
+    """
+
+    EXPECTED_ROUTES = {
+        "elements/joint": "JointCommandHandler",
+        "elements/cut": "FeatureCommandHandler",
+        "elements/modify": "ModifyCommandHandler",
+        # CONTRACT-001/002 routes, kept here so a refactor cannot quietly drop them.
+        "elements/beam": "BeamCommandHandler",
+        "elements/plate": "PlateCommandHandler",
+        "audit/assembly-integrity": "AuditCommandHandler",
+        "audit/clashes": "AuditCommandHandler",
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        cls.source = DISPATCHER.read_text(encoding="utf-8")
+        known_block = re.search(
+            r"KnownRoutes\s*=\s*new\((?:.|\n)*?\{((?:.|\n)*?)\};", cls.source
+        )
+        assert known_block, "could not locate the KnownRoutes initializer"
+        cls.known_routes = set(re.findall(r'"([^"]+)"', known_block.group(1)))
+
+    def test_routes_are_gated_by_known_routes(self):
+        for route in self.EXPECTED_ROUTES:
+            self.assertIn(
+                route,
+                self.known_routes,
+                f"{route} is missing from KnownRoutes and would 404 before reaching its handler",
+            )
+
+    def test_routes_reach_their_handler(self):
+        for route, handler in self.EXPECTED_ROUTES.items():
+            self.assertRegex(
+                self.source,
+                rf'"{re.escape(route)}"\s*=>\s*{handler}\.',
+                f"{route} is not dispatched to {handler}",
+            )
+
+    def test_handlers_exist_with_their_entry_point(self):
+        for file_name, entry_point in (
+            ("JointCommandHandler.cs", "Create"),
+            ("FeatureCommandHandler.cs", "Apply"),
+            ("ModifyCommandHandler.cs", "Modify"),
+        ):
+            path = PLUGIN_COMMANDS / "Handlers" / file_name
+            self.assertTrue(path.is_file(), f"{file_name} is missing")
+            self.assertRegex(
+                path.read_text(encoding="utf-8"),
+                rf"public static CommandResult {entry_point}\(CommandContext",
+                f"{file_name} does not expose {entry_point}(CommandContext)",
+            )
+
+    def test_handlers_do_not_open_their_own_transaction(self):
+        """rules/transaction-safety.md §3: the dispatcher owns the single transaction boundary.
+
+        A handler that opens a nested DocumentLock or StartTransaction of its own can commit
+        a partial model change that the dispatcher then believes it rolled back.
+        """
+        for file_name in ("JointCommandHandler.cs", "FeatureCommandHandler.cs", "ModifyCommandHandler.cs"):
+            source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")
+            self.assertNotIn("LockDocument()", source, f"{file_name} opens its own document lock")
+            self.assertNotIn("StartTransaction(", source, f"{file_name} opens its own transaction")
 
 
 if __name__ == "__main__":

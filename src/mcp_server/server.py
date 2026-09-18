@@ -87,6 +87,46 @@ try:
         return modeling_tools.set_main_part(client, assembly_handle, new_main_part_handle)
 
     @mcp.tool()
+    def create_standard_joint(
+        primary_handle: str,
+        joint_type: Optional[str] = None,
+        rule_name: Optional[str] = None,
+        secondary_handles: Optional[List[str]] = None,
+        connection_point: Optional[List[float]] = None,
+        primary_end: str = "Start",
+    ) -> Dict[str, Any]:
+        """Apply a standard parametric connection (e.g. BasePlate, ClipAngle, EndPlate, ApexHaunch)."""
+        return modeling_tools.create_standard_joint(
+            client, primary_handle, joint_type, rule_name, secondary_handles, connection_point, primary_end
+        )
+
+    @mcp.tool()
+    def apply_beam_cut_or_notch(
+        beam_handle: str,
+        cut_type: str = "shortening",
+        cut_length_mm: Optional[float] = None,
+        notch_width_mm: Optional[float] = None,
+        notch_depth_mm: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Apply beam shortening, flange cuts, notches, or miters."""
+        return modeling_tools.apply_beam_cut_or_notch(
+            client, beam_handle, cut_type, cut_length_mm, notch_width_mm, notch_depth_mm
+        )
+
+    @mcp.tool()
+    def modify_element_properties(
+        handle: str,
+        material: Optional[str] = None,
+        model_role: Optional[str] = None,
+        coating: Optional[str] = None,
+        rotation_deg: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Modify material grade, model role, coating, or rotation of an existing element."""
+        return modeling_tools.modify_element_properties(
+            client, handle, material, model_role, coating, rotation_deg
+        )
+
+    @mcp.tool()
     def execute_csharp_script(script_code: str) -> Dict[str, Any]:
         """Execute dynamic C# Roslyn script in Advance Steel with automatic transaction rollback."""
         return scripting_tools.execute_csharp_script(client, script_code)
