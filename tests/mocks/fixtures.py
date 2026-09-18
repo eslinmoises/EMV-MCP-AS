@@ -93,3 +93,74 @@ MOCK_UCS_AND_GRIDS = {
         {"name": "+4.00", "elevation": 4000.0}
     ]
 }
+
+MOCK_NUMBERING_MARKS = [
+    {
+        "handle": "1B2C",
+        "single_part_mark": "p1",
+        "assembly_mark": "C1",
+        "is_main_part": True,
+        "quantity": 4,
+    },
+    {
+        "handle": "3D4E",
+        "single_part_mark": "p2",
+        "assembly_mark": "C1",
+        "is_main_part": False,
+        "quantity": 1,
+    },
+    {
+        "handle": "5E6F",
+        "single_part_mark": "p3",
+        "assembly_mark": "B1",
+        "is_main_part": True,
+        "quantity": 2,
+    },
+    {
+        "handle": "7A8B",
+        "single_part_mark": "p4",
+        "assembly_mark": "C1",
+        "is_main_part": False,
+        "quantity": 1,
+    },
+]
+
+MOCK_NUMBERING_CONFLICTS = [
+    {
+        "handle": "7A8B",
+        "mark": "C1",
+        "reason": "Two geometrically different parts share the assembly mark C1.",
+    }
+]
+
+MOCK_UNNUMBERED_ELEMENT_HANDLE = "9C0D"
+
+MOCK_DRAWING_STATUS_ASSEMBLIES = [
+    {
+        "assembly_mark": "C1",
+        "main_part_handle": "1B2C",
+        "main_part_section": "HEB300",
+        "quantity": 4,
+        "has_drawing": True,
+        "drawing_numbers": ["C1-01"],
+        "is_up_to_date": True,
+    },
+    {
+        "assembly_mark": "B1",
+        "main_part_handle": "5E6F",
+        "main_part_section": "IPE240",
+        "quantity": 2,
+        "has_drawing": False,
+        "drawing_numbers": [],
+        "is_up_to_date": False,
+    },
+    {
+        "assembly_mark": "C2",
+        "main_part_handle": "0A1B",
+        "main_part_section": "HEA200",
+        "quantity": 1,
+        "has_drawing": True,
+        "drawing_numbers": ["C2-01"],
+        "is_up_to_date": False,
+    },
+]

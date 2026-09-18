@@ -5,7 +5,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from src.mcp_server.client.ipc_client import AdvanceSteelIpcClient
-from src.mcp_server.tools import diagnostic_tools, modeling_tools, scripting_tools
+from src.mcp_server.tools import diagnostic_tools, modeling_tools, production_tools, scripting_tools
 
 # Default IPC connection
 IPC_PORT = int(os.environ.get("AS_MCP_PORT", "5055"))
@@ -125,6 +125,44 @@ try:
         return modeling_tools.modify_element_properties(
             client, handle, material, model_role, coating, rotation_deg
         )
+
+    @mcp.tool()
+    def run_automatic_numbering(
+        element_handles: Optional[List[str]] = None,
+        start_number: Optional[int] = None,
+        prefix_single_parts: Optional[str] = None,
+        prefix_assemblies: Optional[str] = None,
+        keep_existing_numbers: Optional[bool] = None,
+        engine_command: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Run Advance Steel numbering for the model or a selected set of elements."""
+        return production_tools.run_automatic_numbering(
+            client,
+            element_handles,
+            start_number,
+            prefix_single_parts,
+            prefix_assemblies,
+            keep_existing_numbers,
+            engine_command,
+        )
+
+    @mcp.tool()
+    def export_dstv_nc_files(
+        element_handles: Optional[List[str]] = None,
+        output_directory: Optional[str] = None,
+        file_extension: Optional[str] = None,
+        overwrite: Optional[bool] = None,
+        engine_command: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Export numbered single parts as DSTV/NC1 files."""
+        return production_tools.export_dstv_nc_files(
+            client, element_handles, output_directory, file_extension, overwrite, engine_command
+        )
+
+    @mcp.tool()
+    def get_drawing_status(assembly_marks: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Report drawing availability and freshness for numbered assemblies."""
+        return production_tools.get_drawing_status(client, assembly_marks)
 
     @mcp.tool()
     def execute_csharp_script(script_code: str) -> Dict[str, Any]:

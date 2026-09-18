@@ -3,15 +3,20 @@ Runs on http://127.0.0.1:5055 (or configured port) without requiring AutoCAD.
 """
 
 import json
+import ntpath
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from tests.mocks.fixtures import (
+    MOCK_DRAWING_STATUS_ASSEMBLIES,
     MOCK_HEALTH_DATA,
     MOCK_MAIN_PART_INSPECTION,
+    MOCK_NUMBERING_CONFLICTS,
+    MOCK_NUMBERING_MARKS,
     MOCK_SELECTED_ELEMENTS,
     MOCK_UCS_AND_GRIDS,
+    MOCK_UNNUMBERED_ELEMENT_HANDLE,
     MOCK_WELD_VERIFICATION,
 )
 
@@ -28,6 +33,50 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             "execution_time_ms": 15,
         }
         self.wfile.write(json.dumps(payload).encode("utf-8"))
+
+    @staticmethod
+    def _numbering_report(body_json):
+        element_handles = body_json.get("element_handles")
+        if element_handles is None:
+            marks = list(MOCK_NUMBERING_MARKS)
+        else:
+            requested_handles = set(element_handles)
+            marks = [mark for mark in MOCK_NUMBERING_MARKS if mark["handle"] in requested_handles]
+
+        included_handles = {mark["handle"] for mark in marks}
+        conflicts = [
+            conflict for conflict in MOCK_NUMBERING_CONFLICTS
+            if conflict["handle"] in included_handles
+        ]
+        return {
+            "scope": "selection" if "element_handles" in body_json else "model",
+            "numbered_single_parts": len(marks),
+            "numbered_assemblies": len({mark["assembly_mark"] for mark in marks}),
+            "already_numbered": 0,
+            "marks": marks,
+            "conflicts": conflicts,
+            "warnings": [],
+        }
+
+    @staticmethod
+    def _drawing_status_report(assembly_marks):
+        if assembly_marks is None:
+            assemblies = list(MOCK_DRAWING_STATUS_ASSEMBLIES)
+        else:
+            requested_marks = set(assembly_marks)
+            assemblies = [
+                assembly for assembly in MOCK_DRAWING_STATUS_ASSEMBLIES
+                if assembly["assembly_mark"] in requested_marks
+            ]
+
+        with_drawings = sum(assembly["has_drawing"] for assembly in assemblies)
+        return {
+            "total_assemblies": len(assemblies),
+            "with_drawings": with_drawings,
+            "without_drawings": len(assemblies) - with_drawings,
+            "assemblies": assemblies,
+            "warnings": [],
+        }
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -51,6 +100,15 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             # 1x1 transparent PNG Base64
             dummy_png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
             self._send_envelope(data={"image_base64": dummy_png, "format": "png"})
+        elif path == "/api/v1/production/drawing-status":
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            requested_marks = query.get("assembly_marks")
+            assembly_marks = None
+            if requested_marks is not None:
+                assembly_marks = [
+                    mark for value in requested_marks for mark in value.split(",") if mark
+                ]
+            self._send_envelope(data=self._drawing_status_report(assembly_marks))
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},
@@ -112,6 +170,55 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                 self._send_envelope(
                     data={"success": True, "output": "Roslyn execution completed successfully."}
                 )
+        elif path == "/api/v1/production/numbering":
+            self._send_envelope(data=self._numbering_report(body_json))
+        elif path == "/api/v1/production/export-nc":
+            requested_handles = body_json.get("element_handles")
+            if requested_handles is not None and MOCK_UNNUMBERED_ELEMENT_HANDLE in requested_handles:
+                self._send_envelope(
+                    error={
+                        "code": "UNNUMBERED_MODEL",
+                        "message": "Numbering must run before NC export.",
+                        "details": "Part 9C0D has no single-part mark.",
+                        "suggestion": "Run automatic numbering before exporting DSTV/NC files.",
+                    },
+                    status_code=409,
+                )
+                return
+
+            if requested_handles is None:
+                marks = list(MOCK_NUMBERING_MARKS)
+            else:
+                requested_handle_set = set(requested_handles)
+                marks = [mark for mark in MOCK_NUMBERING_MARKS if mark["handle"] in requested_handle_set]
+
+            output_directory = body_json.get("output_directory", "./DSTV_NC1")
+            if not ntpath.isabs(output_directory):
+                output_directory = ntpath.join(ntpath.dirname(MOCK_HEALTH_DATA["active_dwg"]), output_directory)
+            output_directory = ntpath.normpath(output_directory)
+            file_extension = body_json.get("file_extension", "nc1")
+            files = [
+                {
+                    "file_name": f"{mark['single_part_mark']}.{file_extension}",
+                    "path": ntpath.join(output_directory, f"{mark['single_part_mark']}.{file_extension}"),
+                    "element_handle": mark["handle"],
+                    "single_part_mark": mark["single_part_mark"],
+                    "assembly_mark": mark["assembly_mark"],
+                    "size_bytes": 4096,
+                }
+                for mark in marks
+            ]
+            self._send_envelope(
+                data={
+                    "output_directory": output_directory,
+                    "file_extension": file_extension,
+                    "exported_count": len(files),
+                    "total_bytes": sum(file["size_bytes"] for file in files),
+                    "files": files,
+                    "skipped": [],
+                    "warnings": [],
+                }
+            )
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},

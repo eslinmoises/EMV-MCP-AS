@@ -3,7 +3,7 @@
 - **Parent Contract**: [`CONTRACT-004`](./CONTRACT-004-numbering-and-dstv.md)
 - **Assigned Worker**: **Codex CLI** (scaffolding worker, mock data generator)
 - **Director / Supervisor**: Claude Code acting as Orchestration Director
-- **Status**: **ACTIVE**
+- **Status**: **COMPLETED & ACCEPTED BY DIRECTOR** (Accepted 2026-09-19)
 - **Date Created**: 2026-09-19
 - **Target Component**: `src/mcp_server`, `tests`
 
@@ -64,7 +64,34 @@ python -m pytest tests/ -q
 ---
 
 ## 6. Definition of Done (DoD)
-- [ ] `pytest tests/ -q` is green, with the 26 pre-existing tests still passing.
-- [ ] The three tools are registered on the FastMCP server with typed signatures and docstrings.
-- [ ] Mock responses match SPEC-002 §4 key for key.
-- [ ] No file outside the whitelist was touched.
+- [x] `pytest tests/ -q` is green, with the 26 pre-existing tests still passing.
+- [x] The three tools are registered on the FastMCP server with typed signatures and docstrings.
+- [x] Mock responses match SPEC-002 §4 key for key.
+- [x] No file outside the whitelist was touched.
+
+---
+
+## 7. Director Acceptance (2026-09-19)
+
+**Verification run by the Director**, because the worker could not produce it: `python` is not on the
+PATH of the Codex shell, so its own DoD evidence was missing. The acceptance does not rest on the
+worker's word.
+
+```text
+$ python -m pytest tests/ -q
+................................                                         [100%]
+32 passed in 2.42s
+```
+
+26 pre-existing + 5 delivered by the worker + 1 added during acceptance.
+
+**Whitelist**: clean. Exactly the five contracted files. The concurrent `CommandDispatcher.cs` change
+in the working tree belongs to CONTRACT-004A and was correctly left alone.
+
+**Two notes on the delivery:**
+1. The worker bound its mock to port 5056 instead of 5055, so the new suite cannot collide with the
+   existing one. Not asked for, correct anyway.
+2. **Gap closed by the Director**: `engine_command` (SPEC-004 §4) was not exposed by the tools. The
+   worker read the spec before that escape hatch was added to it, so this is a Director sequencing
+   error, not a worker defect. Added as a pass-through on both POST tools with a test pinning that it
+   reaches the add-in — a silently dropped parameter would be indistinguishable from a missing engine.
