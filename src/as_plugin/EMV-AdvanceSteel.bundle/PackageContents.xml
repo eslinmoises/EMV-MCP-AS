@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage 
+    SchemaVersion="1.0" 
+    AutodeskProduct="AdvanceSteel" 
+    ProductType="Application" 
+    Name="EMV-AdvanceSteel-MCP" 
+    Description="Model Context Protocol bridge and agentic modeling engine for Autodesk Advance Steel 2025 and 2026" 
+    AppVersion="1.0.0" 
+    Author="EMV Community" 
+    ProductCode="{9B8E3D21-7A12-4C98-BD54-3D28E5F90B12}">
+  
+  <CompanyDetails Name="EMV" Url="https://github.com/EMV-MCP-AS" />
+
+  <Components Description="Advance Steel 2025 and 2026 .NET 8 Runtime">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*|Advance*" SeriesMin="R25.0" SeriesMax="R26.0" />
+    <ComponentEntry 
+        AppName="EMV.AdvanceSteel.Plugin" 
+        Version="1.0.0" 
+        ModuleName="./Contents/Release/EMV.AdvanceSteel.Plugin.dll" 
+        AppType=".Net" 
+        LoadOnAutoCADStartup="True" />
+  </Components>
+
+</ApplicationPackage>
