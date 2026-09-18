@@ -1,0 +1,15 @@
+---
+description: Advance Steel and Spec-Driven Development rules for Cursor AI
+globs: **/*
+---
+
+# Cursor AI Agent Guidelines
+
+- Respect the **Spec-Driven Development** principles defined in `docs/specs/`.
+- Coordinate tasks via `orchestration/contracts/`.
+- In C# code for Advance Steel:
+  - Target .NET 8 (`net8.0-windows`).
+  - Always guard model modifications with `doc.LockDocument()` and transaction commit/abort blocks.
+- In Python code for FastMCP:
+  - Follow type hinting strictly using Pydantic models.
+  - Test tools using `tests/mocks/mock_as_plugin.py`.
