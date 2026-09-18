@@ -108,11 +108,103 @@ A 3D coordinate array `[X, Y, Z]` in millimeters (or inches if imperial model).
 
 ---
 
-## 4. Advance Steel 2026 .NET API Mapping Reference
+## 4. Production & Fabrication Schemas
+
+Marks are read back from the model after the engine has run: a report never echoes what was
+requested, it states what the model now holds. `execution_time_ms` and the `success`/`error`
+envelope are added by the transport layer (SPEC-001 §4) and are not part of these payloads.
+
+### Numbering Report (`POST /api/v1/production/numbering`)
+```json
+{
+  "scope": "model",
+  "numbered_single_parts": 42,
+  "numbered_assemblies": 11,
+  "already_numbered": 0,
+  "marks": [
+    {
+      "handle": "1B2C",
+      "single_part_mark": "p1",
+      "assembly_mark": "C1",
+      "is_main_part": true,
+      "quantity": 4
+    }
+  ],
+  "conflicts": [
+    {
+      "handle": "7A8B",
+      "mark": "C1",
+      "reason": "Two geometrically different parts share the assembly mark C1."
+    }
+  ],
+  "warnings": []
+}
+```
+- `scope`: `"model"` when the whole model was numbered, `"selection"` when `element_handles` was given.
+- `already_numbered`: parts that kept a pre-existing mark (`keep_existing_numbers = true`).
+- `quantity`: how many identical parts share this single-part mark — the shop order quantity.
+- `conflicts` is non-empty **without** failing the call: the model is numbered but the detailer must resolve the duplicates before release.
+
+### NC Export Report (`POST /api/v1/production/export-nc`)
+```json
+{
+  "output_directory": "C:\Projects\DSTV_NC1",
+  "file_extension": "nc1",
+  "exported_count": 2,
+  "total_bytes": 8192,
+  "files": [
+    {
+      "file_name": "p1.nc1",
+      "path": "C:\Projects\DSTV_NC1\p1.nc1",
+      "element_handle": "1B2C",
+      "single_part_mark": "p1",
+      "assembly_mark": "C1",
+      "size_bytes": 4096
+    }
+  ],
+  "skipped": [
+    {
+      "handle": "9C0D",
+      "reason": "UNNUMBERED_PART",
+      "message": "Part has no single part mark; it would produce an untraceable NC file."
+    }
+  ],
+  "warnings": []
+}
+```
+- A part without a single-part mark is **skipped, never exported**: an NC file whose name cannot be traced to a mark is worse on the shop floor than a missing one.
+- `path` is always absolute, so an agent can hand it to a downstream CAM step verbatim.
+
+### Drawing Status Report (`GET /api/v1/production/drawing-status`)
+```json
+{
+  "total_assemblies": 11,
+  "with_drawings": 8,
+  "without_drawings": 3,
+  "assemblies": [
+    {
+      "assembly_mark": "C1",
+      "main_part_handle": "1B2C",
+      "main_part_section": "HEB300",
+      "quantity": 4,
+      "has_drawing": true,
+      "drawing_numbers": ["C1-01"],
+      "is_up_to_date": true
+    }
+  ],
+  "warnings": []
+}
+```
+- `is_up_to_date` is `false` when the model changed after the drawing was derived — the drawing exists but must not be released to the shop.
+
+---
+
+## 5. Advance Steel 2026 .NET API Mapping Reference
 As extracted by assembly reflection:
 - **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
 - **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`
 - **Welds**: `Autodesk.AdvanceSteel.Modelling.WeldPattern`
 - **Location**: `Autodesk.AdvanceSteel.ConstructionTypes.AtomicElement.eAssemblyLocation` (`kInShop`, `kOnSite`)
 - **Assembly & Main Part**: Managed via `AtomicElement.IsMainPart` and connection graphs (`GetConnectedObjects(..., kInShop)`).
-
+- **Numbering (read back)**: `AtomicElement.GetSinglePartPositionNumber()`, `GetMainPartPositionNumber()`, `GetNumberingStatus()`.
+- **Numbering / NC engines**: not exposed as managed classes in AS 2026; driven through the Advance Steel command layer and verified afterwards through the properties above (see `rules/transaction-safety.md` §5).

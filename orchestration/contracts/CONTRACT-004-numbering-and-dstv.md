@@ -1,8 +1,8 @@
 # Agentic Contract: CONTRACT-004-NUMBERING-AND-DSTV
 
-- **Assigned Worker**: **Claude Code (Terminal CLI) / Codex**
-- **Director / Supervisor**: Antigravity (Gemini 3.8 Flash)
-- **Status**: **PROPOSED / QUEUED**
+- **Assigned Worker**: decomposed — see sub-contracts below
+- **Director / Supervisor**: Claude Code acting as Orchestration Director
+- **Status**: **ACTIVE / DECOMPOSED** (activated 2026-09-19)
 - **Date Created**: 2026-09-18
 - **Target Component**: `src/as_plugin/Commands/Handlers`
 
@@ -25,6 +25,25 @@ After structural modeling, joint generation, and clash auditing are complete, st
 - [`rules/advance-steel-modeling.md`](../../rules/advance-steel-modeling.md)
 
 ---
+
+## 2b. Decomposition (Director, 2026-09-19)
+
+The parent contract crossed two runtimes and five files, which the handbook forbids in a single
+unit of work. It is split into two sub-contracts with **disjoint whitelists** so both workers can
+run in parallel, joined only by the payload schemas of SPEC-002 §4:
+
+| Sub-contract | Worker | Scope |
+| :--- | :--- | :--- |
+| [`CONTRACT-004A`](./CONTRACT-004A-production-plugin.md) | Claude Code | C# add-in: command-mode dispatcher path + `ProductionCommandHandler` |
+| [`CONTRACT-004B`](./CONTRACT-004B-production-mcp-surface.md) | Codex CLI | Python: FastMCP tools, mock endpoints, tests |
+
+Two amendments to the original scope, both recorded in the specs before any code was written:
+1. **Command mode** (`rules/transaction-safety.md` §5). The numbering and NC engines are not
+   managed classes in AS 2026; they run through the command layer and manage their own
+   transactions, so `production/` routes take the document lock but no outer transaction. The
+   original §6 DoD item "executes inside `doc.LockDocument()` transaction" is superseded by it.
+2. **Drawing status** was named in §1 of this contract but had no endpoint; it is now specified as
+   `GET /api/v1/production/drawing-status` (SPEC-004 §4).
 
 ## 3. Strict Permitted Scope (File Whitelist)
 
@@ -58,6 +77,6 @@ python -m unittest discover -s tests -p "test_*.py"
 ---
 
 ## 6. Definition of Done (DoD)
-- [ ] Production handler executes inside `doc.LockDocument()` transaction.
+- [ ] ~~Production handler executes inside `doc.LockDocument()` transaction.~~ Superseded by §2b.1: document lock, no transaction.
 - [ ] Generates valid NC files or clean mock simulation.
 - [ ] Full test suite passes.
