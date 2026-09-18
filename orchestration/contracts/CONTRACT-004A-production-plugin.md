@@ -1,16 +1,28 @@
 # Agentic Contract: CONTRACT-004A-PRODUCTION-PLUGIN
 
 - **Parent Contract**: [`CONTRACT-004`](./CONTRACT-004-numbering-and-dstv.md)
-- **Assigned Worker**: **Codex CLI** (reassigned from Claude Code, see Director note)
+- **Assigned Worker**: **Claude Code (Terminal CLI)**
 - **Director / Supervisor**: Claude Code acting as Orchestration Director
 - **Status**: **ACTIVE**
 - **Date Created**: 2026-09-19
 - **Target Component**: `src/as_plugin/Commands`
 
-> **Director note (2026-09-19)**: originally assigned to Claude Code. Reassigned to Codex CLI once
-> its authentication was restored, to spread the work across workers while the Claude Code budget is
-> capped. The Director keeps acceptance: build, tests and whitelist are verified independently of the
-> worker's own report.
+> **Director note (2026-09-19)**: briefly dispatched to Codex CLI, then stopped and returned to
+> Claude Code when Codex turned out to be on a free tier (see `orchestration/agent-matrix.md`).
+> **This contract remains ACTIVE and unstarted on master.** The partial Codex attempt is preserved in
+> `git stash` ("CONTRACT-004A WIP") and does **not** compile; treat it as a sketch, not a base.
+>
+> Two findings from that attempt, both verified against the installed AS 2026 assemblies, that the
+> next worker must not rediscover the hard way:
+> 1. `DocumentManager.GetDerivedDocumentsForDwg()` **does not exist** on the managed
+>    `Autodesk.AdvanceSteel.DocumentManagement.DocumentManager`. The string appears in the native
+>    binaries, but the managed entry point for §4.D must be located before it is relied upon —
+>    otherwise `DRAWING_STATUS_UNAVAILABLE` (503) is the honest answer.
+> 2. The attempt reached for **reflection helpers** to reach the Advance Steel API. Reject that
+>    approach: it moves every signature error from compile time to a workshop's runtime, which
+>    defeats the whole reason this project builds against the real assemblies. Call the API directly
+>    and let the compiler arbitrate. `Autodesk.AdvanceSteel.Services.EqualPartsParameters`
+>    (`GetCurrentParameters` / `SetAsCurrent`) is confirmed present and typed.
 
 ---
 
