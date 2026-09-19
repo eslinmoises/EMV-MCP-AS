@@ -92,6 +92,34 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             self._send_envelope(data=MOCK_MAIN_PART_INSPECTION)
         elif path == "/api/v1/spatial/ucs-grids":
             self._send_envelope(data=MOCK_UCS_AND_GRIDS)
+        elif path == "/api/v1/spatial/box":
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            min_raw = query.get("min_point", ["0,0,0"])[0].split(",")
+            max_raw = query.get("max_point", ["1000,1000,1000"])[0].split(",")
+            min_pt = [float(c) for c in min_raw]
+            max_pt = [float(c) for c in max_raw]
+            self._send_envelope(
+                data={
+                    "elements": [
+                        {
+                            "handle": "1B2C",
+                            "type": "StraightBeam",
+                            "section_name": "HEB300",
+                            "material": "S275JR",
+                            "model_role": "Column",
+                            "bounding_box": {
+                                "min_point": [0.0, 0.0, 0.0],
+                                "max_point": [300.0, 300.0, 4000.0],
+                            },
+                        }
+                    ],
+                    "count": 1,
+                    "box": {
+                        "min_point": min_pt,
+                        "max_point": max_pt,
+                    },
+                }
+            )
         elif path == "/api/v1/audit/assembly-integrity":
             self._send_envelope(data={"findings": [], "orphaned_parts": 0, "total_parts_scanned": 12})
         elif path == "/api/v1/audit/clashes":
@@ -138,6 +166,37 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
             thickness = body_json.get("thickness", 20.0)
             self._send_envelope(
                 data={"handle": "PLATE_202", "thickness_mm": thickness, "area_m2": 0.16, "weight_kg": 25.1}
+            )
+        elif path == "/api/v1/elements/bolt":
+            handles = body_json.get("connected_handles", ["1B2C", "2D3E"])
+            standard = body_json.get("bolt_standard", "DIN 931")
+            grade = body_json.get("bolt_grade", "8.8")
+            diam = float(body_json.get("bolt_diameter_mm", 20.0))
+            nx = int(body_json.get("nx", 2))
+            ny = int(body_json.get("ny", 2))
+            is_site = bool(body_json.get("is_site_bolt", True))
+            self._send_envelope(
+                data={
+                    "handle": "BOLT_501",
+                    "bolt_standard": standard,
+                    "bolt_grade": grade,
+                    "bolt_diameter_mm": diam,
+                    "count": nx * ny,
+                    "connected_handles": handles,
+                    "is_site_bolt": is_site,
+                }
+            )
+        elif path == "/api/v1/elements/poly-beam":
+            points = body_json.get("points", [[0, 0, 0], [1000, 0, 0]])
+            section = body_json.get("section_name", "HEA200")
+            self._send_envelope(
+                data={
+                    "handle": "PBEAM_601",
+                    "section_name": section,
+                    "length_mm": 6283.18,
+                    "weight_kg": 265.8,
+                    "vertex_count": len(points),
+                }
             )
         elif path == "/api/v1/assembly/set-main-part":
             new_handle = body_json.get("new_main_part_handle", "1B2C")

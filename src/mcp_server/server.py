@@ -57,6 +57,15 @@ try:
         return diagnostic_tools.detect_clashes_and_clearances(client, element_handles)
 
     @mcp.tool()
+    def query_elements_in_box(
+        min_point: List[float],
+        max_point: List[float],
+        element_types: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Find elements whose 3D bounding extents intersect a bounding box [min_point, max_point]."""
+        return diagnostic_tools.query_elements_in_box(client, min_point, max_point, element_types)
+
+    @mcp.tool()
     def create_straight_beam(
         start_point: List[float],
         end_point: List[float],
@@ -124,6 +133,48 @@ try:
         """Modify material grade, model role, coating, or rotation of an existing element."""
         return modeling_tools.modify_element_properties(
             client, handle, material, model_role, coating, rotation_deg
+        )
+
+    @mcp.tool()
+    def create_bolt_pattern(
+        connected_handles: List[str],
+        origin: List[float],
+        normal: Optional[List[float]] = None,
+        bolt_standard: str = "DIN 931",
+        bolt_grade: str = "8.8",
+        bolt_diameter_mm: float = 20.0,
+        nx: int = 2,
+        ny: int = 2,
+        dx: float = 70.0,
+        dy: float = 70.0,
+        is_site_bolt: bool = True,
+    ) -> Dict[str, Any]:
+        """Create a rectangular bolt pattern connecting two or more structural parts."""
+        return modeling_tools.create_bolt_pattern(
+            client,
+            connected_handles,
+            origin,
+            normal,
+            bolt_standard,
+            bolt_grade,
+            bolt_diameter_mm,
+            nx,
+            ny,
+            dx,
+            dy,
+            is_site_bolt,
+        )
+
+    @mcp.tool()
+    def create_poly_beam(
+        points: List[List[float]],
+        section_name: str,
+        material: str = "S275JR",
+        model_role: str = "Beam",
+    ) -> Dict[str, Any]:
+        """Create a continuous multi-segment polybeam or curved member from 3D points."""
+        return modeling_tools.create_poly_beam(
+            client, points, section_name, material, model_role
         )
 
     @mcp.tool()

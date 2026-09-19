@@ -159,6 +159,50 @@ class TestMcpTools(unittest.TestCase):
         self.assertIn("clashes", res["data"])
         self.assertEqual(res["data"]["method"], "AABB_SweepAndPrune")
 
+    def test_query_elements_in_box(self):
+        res = diagnostic_tools.query_elements_in_box(
+            self.client,
+            min_point=[-100.0, -100.0, -100.0],
+            max_point=[500.0, 500.0, 1000.0],
+            element_types=["StraightBeam"],
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["count"], 1)
+        self.assertEqual(res["data"]["elements"][0]["handle"], "1B2C")
+        self.assertEqual(res["data"]["box"]["min_point"], [-100.0, -100.0, -100.0])
+
+    def test_create_bolt_pattern(self):
+        res = modeling_tools.create_bolt_pattern(
+            self.client,
+            connected_handles=["1B2C", "2D3E"],
+            origin=[150.0, 150.0, 400.0],
+            normal=[0.0, 0.0, 1.0],
+            bolt_standard="DIN 931",
+            bolt_grade="8.8",
+            bolt_diameter_mm=20.0,
+            nx=2,
+            ny=2,
+            dx=70.0,
+            dy=70.0,
+            is_site_bolt=True,
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "BOLT_501")
+        self.assertEqual(res["data"]["count"], 4)
+        self.assertTrue(res["data"]["is_site_bolt"])
+
+    def test_create_poly_beam(self):
+        res = modeling_tools.create_poly_beam(
+            self.client,
+            points=[[0.0, 0.0, 0.0], [1000.0, 500.0, 0.0], [2000.0, 0.0, 0.0]],
+            section_name="HEA200",
+            material="S275JR",
+            model_role="Beam",
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "PBEAM_601")
+        self.assertEqual(res["data"]["vertex_count"], 3)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_COMMANDS = REPO_ROOT / "src" / "as_plugin" / "Commands"
@@ -183,6 +227,10 @@ class TestDispatcherRouting(unittest.TestCase):
         # CONTRACT-001/002 routes, kept here so a refactor cannot quietly drop them.
         "elements/beam": "BeamCommandHandler",
         "elements/plate": "PlateCommandHandler",
+        "elements/bolt": "BoltCommandHandler",
+        "elements/poly-beam": "PolyBeamCommandHandler",
+        "spatial/ucs-grids": "SpatialCommandHandler",
+        "spatial/box": "SpatialCommandHandler",
         "audit/assembly-integrity": "AuditCommandHandler",
         "audit/clashes": "AuditCommandHandler",
         # CONTRACT-004A command-mode production routes
@@ -241,6 +289,8 @@ class TestDispatcherRouting(unittest.TestCase):
             ("JointCommandHandler.cs", "Create"),
             ("FeatureCommandHandler.cs", "Apply"),
             ("ModifyCommandHandler.cs", "Modify"),
+            ("BoltCommandHandler.cs", "Create"),
+            ("PolyBeamCommandHandler.cs", "Create"),
             ("ProductionCommandHandler.cs", "RunNumbering"),
             ("ProductionCommandHandler.cs", "ExportNc"),
             ("ProductionCommandHandler.cs", "DrawingStatus"),
@@ -259,6 +309,8 @@ class TestDispatcherRouting(unittest.TestCase):
             "JointCommandHandler.cs",
             "FeatureCommandHandler.cs",
             "ModifyCommandHandler.cs",
+            "BoltCommandHandler.cs",
+            "PolyBeamCommandHandler.cs",
             "ProductionCommandHandler.cs",
         ):
             source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")

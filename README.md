@@ -75,8 +75,9 @@ The system uses a **Decoupled Hybrid Architecture** engineered for maximum stabi
 
 ### 📐 Generative Modeling & Editing Tools
 - `create_straight_beam`: Create standard profiles (HEA, HEB, IPE, UPN, tubes) between 3D points.
-- `create_curved_beam`: Create curved beams defined by three points or radius.
+- `create_poly_beam`: Create continuous multi-segment polybeams or curved members defined by 3D points.
 - `create_plate`: Create rectangular or polygonal contour plates.
+- `create_bolt_pattern`: Create rectangular bolt patterns connecting two or more structural parts (standards DIN 931, ISO 4014, A325, etc.).
 - `create_standard_joint`: Apply standard Advance Steel connection macros (BasePlate, ClipAngle, EndPlate, ApexHaunch).
 - `apply_beam_cut_or_notch`: Apply cuts, miters, and notches to profiles (shortening, web/flange notches).
 - `modify_element_properties`: Update material, model role, coating, and rotation by handle.

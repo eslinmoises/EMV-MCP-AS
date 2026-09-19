@@ -123,3 +123,53 @@ def modify_element_properties(
     if rotation_deg is not None:
         payload["rotation_deg"] = rotation_deg
     return client.post("elements/modify", payload)
+
+
+def create_bolt_pattern(
+    client: AdvanceSteelIpcClient,
+    connected_handles: List[str],
+    origin: List[float],
+    normal: Optional[List[float]] = None,
+    bolt_standard: str = "DIN 931",
+    bolt_grade: str = "8.8",
+    bolt_diameter_mm: float = 20.0,
+    nx: int = 2,
+    ny: int = 2,
+    dx: float = 70.0,
+    dy: float = 70.0,
+    is_site_bolt: bool = True,
+) -> Dict[str, Any]:
+    """Create a rectangular bolt pattern connecting two or more structural parts."""
+    payload: Dict[str, Any] = {
+        "connected_handles": connected_handles,
+        "origin": origin,
+        "bolt_standard": bolt_standard,
+        "bolt_grade": bolt_grade,
+        "bolt_diameter_mm": bolt_diameter_mm,
+        "nx": nx,
+        "ny": ny,
+        "dx": dx,
+        "dy": dy,
+        "is_site_bolt": is_site_bolt,
+    }
+    if normal is not None:
+        payload["normal"] = normal
+    return client.post("elements/bolt", payload)
+
+
+def create_poly_beam(
+    client: AdvanceSteelIpcClient,
+    points: List[List[float]],
+    section_name: str,
+    material: str = "S275JR",
+    model_role: str = "Beam",
+) -> Dict[str, Any]:
+    """Create a continuous multi-segment polybeam or curved member from 3D points."""
+    payload: Dict[str, Any] = {
+        "points": points,
+        "section_name": section_name,
+        "material": material,
+        "model_role": model_role,
+    }
+    return client.post("elements/poly-beam", payload)
+

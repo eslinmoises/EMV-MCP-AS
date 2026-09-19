@@ -61,3 +61,19 @@ def detect_clashes_and_clearances(
     if element_handles:
         endpoint += f"?element_handles={','.join(element_handles)}"
     return client.get(endpoint)
+
+
+def query_elements_in_box(
+    client: AdvanceSteelIpcClient,
+    min_point: List[float],
+    max_point: List[float],
+    element_types: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Find elements whose 3D bounding extents intersect a bounding box [min_point, max_point]."""
+    min_str = ",".join(str(c) for c in min_point)
+    max_str = ",".join(str(c) for c in max_point)
+    endpoint = f"spatial/box?min_point={min_str}&max_point={max_str}"
+    if element_types:
+        endpoint += f"&element_types={','.join(element_types)}"
+    return client.get(endpoint)
+

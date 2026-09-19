@@ -60,6 +60,138 @@ namespace EMV.AdvanceSteel.Plugin.Commands.Handlers
             });
         }
 
+        /// <summary>
+        /// GET /api/v1/spatial/box — SPEC-004 §1 query_elements_in_box.
+        /// Returns all elements whose 3D bounding extents intersect [min_point, max_point].
+        /// </summary>
+        public static CommandResult QueryBox(CommandContext ctx)
+        {
+            if (!TryReadBoxPoint(ctx, "min_point", out var minPt, out var error)) return error!;
+            if (!TryReadBoxPoint(ctx, "max_point", out var maxPt, out error)) return error!;
+
+            if (minPt.x > maxPt.x || minPt.y > maxPt.y || minPt.z > maxPt.z)
+            {
+                return CommandResult.Fail(
+                    "INVALID_PARAMETER",
+                    "min_point coordinates must be less than or equal to max_point coordinates.",
+                    400,
+                    "Ensure min_point[i] <= max_point[i] for all X, Y, Z axes.");
+            }
+
+            var typeFilters = ctx.GetStringList("element_types");
+            var filterSet = typeFilters.Count > 0 ? new HashSet<string>(typeFilters, StringComparer.OrdinalIgnoreCase) : null;
+
+            var matchingElements = new List<object>();
+
+            try
+            {
+                var objectIds = AsQuery.ModelObjectIds(eObjectType.kAtomicElem);
+                foreach (var id in objectIds)
+                {
+                    if (AsQuery.Open(id) is not Autodesk.AdvanceSteel.ConstructionTypes.AtomicElement atomic) continue;
+
+                    var typeName = AsQuery.TypeName(atomic);
+                    if (filterSet != null && !filterSet.Contains(typeName)) continue;
+
+                    var extents = atomic.GeomExtents;
+                    if (extents == null || !extents.IsValid) continue;
+
+                    var eMin = extents.MinPoint;
+                    var eMax = extents.MaxPoint;
+
+                    // AABB intersection test
+                    if (eMin.x <= maxPt.x && eMax.x >= minPt.x &&
+                        eMin.y <= maxPt.y && eMax.y >= minPt.y &&
+                        eMin.z <= maxPt.z && eMax.z >= minPt.z)
+                    {
+                        matchingElements.Add(new
+                        {
+                            handle = AsQuery.Safe(() => atomic.Handle, null),
+                            type = typeName,
+                            section_name = AsQuery.SectionName(atomic),
+                            material = AsQuery.Safe(() => atomic.Material, null),
+                            model_role = AsQuery.Safe(() => atomic.Role, null),
+                            bounding_box = new
+                            {
+                                min_point = new[] { Math.Round(eMin.x, 3), Math.Round(eMin.y, 3), Math.Round(eMin.z, 3) },
+                                max_point = new[] { Math.Round(eMax.x, 3), Math.Round(eMax.y, 3), Math.Round(eMax.z, 3) }
+                            }
+                        });
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                return CommandResult.Fail(
+                    "SPATIAL_QUERY_FAILED", ex.Message, 500,
+                    "Error querying model extents in the active drawing.",
+                    ex.StackTrace);
+            }
+
+            return CommandResult.Ok(new
+            {
+                elements = matchingElements,
+                count = matchingElements.Count,
+                box = new
+                {
+                    min_point = new[] { minPt.x, minPt.y, minPt.z },
+                    max_point = new[] { maxPt.x, maxPt.y, maxPt.z }
+                }
+            });
+        }
+
+        private static bool TryReadBoxPoint(
+            CommandContext ctx, string name, out AsPoint3d point, out CommandResult? error)
+        {
+            point = AsPoint3d.kOrigin;
+            error = null;
+
+            // 1. Check Body as JSON array [x, y, z]
+            if (ctx.Body.ValueKind == System.Text.Json.JsonValueKind.Object
+                && ctx.Body.TryGetProperty(name, out var raw)
+                && raw.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                var coords = new List<double>();
+                foreach (var item in raw.EnumerateArray())
+                {
+                    if (item.ValueKind == System.Text.Json.JsonValueKind.Number && item.TryGetDouble(out var d))
+                    {
+                        coords.Add(d);
+                    }
+                }
+                if (coords.Count == 3)
+                {
+                    point = new AsPoint3d(coords[0], coords[1], coords[2]);
+                    return true;
+                }
+            }
+
+            // 2. Check Query parameter "?min_point=x,y,z"
+            if (ctx.Query.TryGetValue(name, out var str) && !string.IsNullOrWhiteSpace(str))
+            {
+                var parts = str.Split(',');
+                if (parts.Length == 3 &&
+                    double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) &&
+                    double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y) &&
+                    double.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var z))
+                {
+                    point = new AsPoint3d(x, y, z);
+                    return true;
+                }
+                error = CommandResult.Fail(
+                    "INVALID_PARAMETER",
+                    $"Query parameter '{name}' must have 3 comma-separated numbers: 'x,y,z'.",
+                    400);
+                return false;
+            }
+
+            error = CommandResult.Fail(
+                "MISSING_PARAMETER",
+                $"Parameter '{name}' is required as a [x, y, z] array or query string 'x,y,z'.",
+                400);
+            return false;
+        }
+
         // ------------------------------------------------------------------
         // Active UCS
         // ------------------------------------------------------------------
