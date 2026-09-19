@@ -89,6 +89,7 @@ The system uses a **Decoupled Hybrid Architecture** engineered for maximum stabi
 - `run_automatic_numbering`: Run the Advance Steel numbering engine to assign single-part (`p1`, `p2`) and assembly (`C1`, `B1`) marks with conflict reporting.
 - `export_dstv_nc_files`: Generate standard DSTV (.nc / .nc1) files for CNC sawing, drilling, and plasma profiling machines.
 - `get_drawing_status`: Inspect whether workshop fabrication drawings exist and are up to date with the 3D model.
+- `get_bill_of_materials`: Generate comprehensive Material Takeoffs (MTO), weight schedules (kg and tonnes), paint coating areas ($m^2$), and bolt lists.
 
 ### ⚡ Procedural Scripting
 - `execute_csharp_script`: Execute in-memory dynamic C# code using Roslyn with transactional rollback.

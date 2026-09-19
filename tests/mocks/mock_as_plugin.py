@@ -382,6 +382,54 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     "filters_applied": body_json,
                 }
             )
+        elif path == "/api/v1/production/bom":
+            handles = body_json.get("element_handles")
+            group_by = body_json.get("group_by", "profile")
+            scanned = 6 if handles is None else len(handles)
+            self._send_envelope(
+                data={
+                    "total_weight_kg": 1845.6,
+                    "total_tonnage": 1.846,
+                    "total_coating_area_m2": 32.45,
+                    "linear_members": [
+                        {
+                            "section_name": "HEB300",
+                            "material": "S275JR",
+                            "count": 2,
+                            "total_length_mm": 8000.0,
+                            "total_weight_kg": 936.4,
+                            "coating_area_m2": 15.2,
+                        },
+                        {
+                            "section_name": "IPE300",
+                            "material": "S275JR",
+                            "count": 2,
+                            "total_length_mm": 12000.0,
+                            "total_weight_kg": 506.4,
+                            "coating_area_m2": 14.1,
+                        },
+                    ],
+                    "plates": [
+                        {
+                            "thickness_mm": 25.0,
+                            "material": "S275JR",
+                            "count": 2,
+                            "total_area_m2": 0.32,
+                            "total_weight_kg": 62.8,
+                        }
+                    ],
+                    "bolts": [
+                        {
+                            "bolt_standard": "DIN 931",
+                            "bolt_grade": "8.8",
+                            "bolt_diameter_mm": 20.0,
+                            "count": 8,
+                        }
+                    ],
+                    "group_by": group_by,
+                    "elements_scanned": scanned,
+                }
+            )
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},

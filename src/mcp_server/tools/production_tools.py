@@ -65,3 +65,18 @@ def get_drawing_status(
         encoded_marks = ",".join(urllib.parse.quote(mark, safe="") for mark in assembly_marks)
         endpoint += f"?assembly_marks={encoded_marks}"
     return client.get(endpoint)
+
+
+def get_bill_of_materials(
+    client: AdvanceSteelIpcClient,
+    element_handles: Optional[List[str]] = None,
+    group_by: Optional[str] = "profile",
+) -> Dict[str, Any]:
+    """Generate a comprehensive Bill of Materials (BOM) / Material Takeoff (MTO) report."""
+    payload: Dict[str, Any] = {}
+    if element_handles is not None:
+        payload["element_handles"] = element_handles
+    if group_by is not None:
+        payload["group_by"] = group_by
+    return client.post("production/bom", payload)
+

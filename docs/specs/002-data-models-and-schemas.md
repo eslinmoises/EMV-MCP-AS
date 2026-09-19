@@ -325,7 +325,57 @@ envelope are added by the transport layer (SPEC-001 §4) and are not part of the
 
 ---
 
-## 7. Advance Steel 2026 .NET API Mapping Reference
+## 7. Bill of Materials & Material Takeoff Schema
+
+### Bill of Materials Response (`POST /api/v1/production/bom`)
+```json
+{
+  "total_weight_kg": 1845.6,
+  "total_tonnage": 1.846,
+  "total_coating_area_m2": 32.45,
+  "linear_members": [
+    {
+      "section_name": "HEB300",
+      "material": "S275JR",
+      "count": 2,
+      "total_length_mm": 8000.0,
+      "total_weight_kg": 936.4,
+      "coating_area_m2": 15.2
+    },
+    {
+      "section_name": "IPE300",
+      "material": "S275JR",
+      "count": 2,
+      "total_length_mm": 12000.0,
+      "total_weight_kg": 506.4,
+      "coating_area_m2": 14.1
+    }
+  ],
+  "plates": [
+    {
+      "thickness_mm": 25.0,
+      "material": "S275JR",
+      "count": 2,
+      "total_area_m2": 0.32,
+      "total_weight_kg": 62.8
+    }
+  ],
+  "bolts": [
+    {
+      "bolt_standard": "DIN 931",
+      "bolt_grade": "8.8",
+      "bolt_diameter_mm": 20.0,
+      "count": 8
+    }
+  ],
+  "group_by": "profile",
+  "elements_scanned": 12
+}
+```
+
+---
+
+## 8. Advance Steel 2026 .NET API Mapping Reference
 As extracted by assembly reflection:
 - **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
 - **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`

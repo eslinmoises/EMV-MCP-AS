@@ -218,3 +218,21 @@ generated from an unnumbered part cannot be traced back to a mark on the shop fl
   - `assembly_marks` (`list[str]`, optional, query `?assembly_marks=C1,B1`): restrict the report.
 - **Returns**: `DrawingStatusReport`.
 - **Errors**: `UNNUMBERED_MODEL` (409), `DRAWING_STATUS_UNAVAILABLE` (503).
+
+### `get_bill_of_materials`
+- **Endpoint**: `POST /api/v1/production/bom`
+- **Description**: Generates a comprehensive Bill of Materials (BOM) / Material Takeoff (MTO) report for the model or a selection of element handles. Aggregates linear profiles (lengths, unit weights, total weights, paint coating surface area), plates (thicknesses, contour areas, weights), and fasteners (standards, diameters, grades, counts), computing total structural steel tonnage.
+- **Parameters**:
+  - `element_handles` (`list[str]`, optional): restrict takeoff scope. Omitted ⇒ entire active model.
+  - `group_by` (`str`, optional, default=`"profile"`): aggregation dimension: `"profile"`, `"assembly"`, or `"material"`.
+- **Returns**: `BomReport`:
+  - `total_weight_kg` (`float`)
+  - `total_tonnage` (`float`, metric tonnes)
+  - `total_coating_area_m2` (`float`)
+  - `linear_members` (`list[dict]`): items with `section_name`, `material`, `count`, `total_length_mm`, `total_weight_kg`, `coating_area_m2`.
+  - `plates` (`list[dict]`): items with `thickness_mm`, `material`, `count`, `total_area_m2`, `total_weight_kg`.
+  - `bolts` (`list[dict]`): items with `bolt_standard`, `bolt_grade`, `bolt_diameter_mm`, `count`.
+  - `group_by` (`str`)
+  - `elements_scanned` (`int`)
+- **Errors**: `INVALID_PARAMETER` (400), `NO_ELEMENTS_FOUND` (404).
+

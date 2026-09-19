@@ -377,6 +377,7 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "production/numbering" => ProductionCommandHandler.RunNumbering(ctx),
             "production/export-nc" => ProductionCommandHandler.ExportNc(ctx),
             "production/drawing-status" => ProductionCommandHandler.DrawingStatus(ctx),
+            "production/bom" => BomCommandHandler.GenerateBom(ctx),
             _ => CommandResult.Fail("ENDPOINT_NOT_FOUND", $"Unknown endpoint: {ctx.Path}", 404)
         };
 
@@ -417,7 +418,8 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "script/execute",
             "production/numbering",
             "production/export-nc",
-            "production/drawing-status"
+            "production/drawing-status",
+            "production/bom"
         };
 
         private static readonly HashSet<string> CommandRoutes = new(StringComparer.OrdinalIgnoreCase)

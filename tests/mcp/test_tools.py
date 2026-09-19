@@ -266,6 +266,8 @@ class TestDispatcherRouting(unittest.TestCase):
         "elements/query": "QueryCommandHandler",
         "elements/joints-catalog": "QueryCommandHandler",
         "elements/validate-section": "QueryCommandHandler",
+        # CONTRACT-007 production BOM route
+        "production/bom": "BomCommandHandler",
     }
 
     COMMAND_ROUTES = {
@@ -326,6 +328,7 @@ class TestDispatcherRouting(unittest.TestCase):
             ("QueryCommandHandler.cs", "QueryElements"),
             ("QueryCommandHandler.cs", "GetJointsCatalog"),
             ("QueryCommandHandler.cs", "ValidateSection"),
+            ("BomCommandHandler.cs", "GenerateBom"),
         ):
             path = PLUGIN_COMMANDS / "Handlers" / file_name
             self.assertTrue(path.is_file(), f"{file_name} is missing")
@@ -345,6 +348,7 @@ class TestDispatcherRouting(unittest.TestCase):
             "PolyBeamCommandHandler.cs",
             "ProductionCommandHandler.cs",
             "QueryCommandHandler.cs",
+            "BomCommandHandler.cs",
         ):
             source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")
             self.assertNotIn("LockDocument()", source, f"{file_name} opens its own document lock")

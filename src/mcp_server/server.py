@@ -248,6 +248,14 @@ try:
         return production_tools.get_drawing_status(client, assembly_marks)
 
     @mcp.tool()
+    def get_bill_of_materials(
+        element_handles: Optional[List[str]] = None,
+        group_by: str = "profile",
+    ) -> Dict[str, Any]:
+        """Generate a comprehensive Bill of Materials (BOM) / Material Takeoff (MTO) report."""
+        return production_tools.get_bill_of_materials(client, element_handles, group_by)
+
+    @mcp.tool()
     def execute_csharp_script(script_code: str) -> Dict[str, Any]:
         """Execute dynamic C# Roslyn script in Advance Steel with automatic transaction rollback."""
         return scripting_tools.execute_csharp_script(client, script_code)

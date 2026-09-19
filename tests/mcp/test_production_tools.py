@@ -95,6 +95,26 @@ class TestProductionTools(unittest.TestCase):
         production_tools.export_dstv_nc_files(client, engine_command="AstM2NcFiles")
         self.assertEqual(client.payload["engine_command"], "AstM2NcFiles")
 
+    def test_get_bill_of_materials_model_wide(self):
+        res = production_tools.get_bill_of_materials(self.client)
+        self.assertTrue(res["success"])
+        data = res["data"]
+        self.assertIn("total_weight_kg", data)
+        self.assertIn("total_tonnage", data)
+        self.assertIn("total_coating_area_m2", data)
+        self.assertEqual(len(data["linear_members"]), 2)
+        self.assertEqual(len(data["plates"]), 1)
+        self.assertEqual(len(data["bolts"]), 1)
+        self.assertEqual(data["group_by"], "profile")
+        self.assertEqual(data["elements_scanned"], 6)
+
+    def test_get_bill_of_materials_with_filter(self):
+        res = production_tools.get_bill_of_materials(self.client, element_handles=["1B2C", "PLATE_202"])
+        self.assertTrue(res["success"])
+        data = res["data"]
+        self.assertEqual(data["elements_scanned"], 2)
+
+
 
 if __name__ == "__main__":
     unittest.main()

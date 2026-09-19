@@ -80,6 +80,19 @@
 - **Verification**:
   - `dotnet build src/as_plugin/EMV.AdvanceSteel.Plugin.csproj -c Release` passed (0 errors, 1 benign warning).
   - `python -m pytest tests/` passed (39/39 tests green).
+### [2026-09-19] CONTRACT-007: Bill of Materials (BOM) & Material Takeoff Engine
+- **Worker**: Antigravity (Lead Director / Orchestrator)
+- **Scope**:
+  - `POST /api/v1/production/bom`: Model-wide and handle-filtered Material Takeoff (`BomCommandHandler.GenerateBom`).
+  - Aggregation of linear members (length, unit weight, total weight, coating surface area $m^2$).
+  - Aggregation of contour plates (thickness, surface area $m^2$, weight).
+  - Fastener takeoff (standard, grade, diameter, count).
+  - Total steel weight (kg) and metric tonnage calculation.
+  - Python FastMCP tool: `get_bill_of_materials` exposed in `server.py` and `production_tools.py`.
+  - Mock server endpoints and offline tests in `test_production_tools.py` and `TestDispatcherRouting`.
+- **Verification**:
+  - `dotnet build src/as_plugin/EMV.AdvanceSteel.Plugin.csproj -c Release` passed (0 errors, 1 benign warning).
+  - `python -m pytest tests/` passed (41/41 tests green).
   - Automated deployment of updated bundle via `python scripts/deploy_bundle.py`.
 
 ---
@@ -100,4 +113,7 @@
    Continuous multi-segment beams and curved members are created using `Autodesk.AdvanceSteel.Modelling.PolyBeam`, which wraps `Autodesk.AdvanceSteel.Geometry.Polyline3d` and an orientation reference vector `Vector3d`.
 7. **Profiles Validation via AstorProfiles**:
    `Autodesk.AdvanceSteel.Profiles.ProfilesManager.GetProfTypeAsDefault(string sectionName)` provides a zero-risk, transaction-free static check in `ASProfilesMgd.dll`. If the section exists in the active Advance Steel database, a valid `ProfileName` is returned with its internal table name. If missing or invalid, an empty or null object is returned.
+8. **Native Physical Property Extraction (BOM & Painting)**:
+   Advance Steel's `Beam` exposes `GetLength()`, `GetWeight(0)` (unprocessed) and `GetWeight(1)` (exact fabricated), plus `GetPaintArea()` for exact 3D paint surface calculation. `PlateBase` exposes `Thickness`, `GetArea()`, `GetWeight()`, and `GetPaintArea()`. `CountableScrewBoltPattern` exposes `Nx` and `Ny` (`Nx * Ny` total fasteners) along with `ScrewDiameter`, `ScrewLength`, `Standard`, and `Grade`.
+
 
