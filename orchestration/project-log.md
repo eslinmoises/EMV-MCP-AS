@@ -69,6 +69,19 @@
   - `python -m pytest tests/` passed (36/36 tests green).
   - Automated deployment of updated bundle via `python scripts/deploy_bundle.py`.
 
+### [2026-09-19] CONTRACT-006: Bulk Query, Connection Catalog & Profile Validation
+- **Worker**: Antigravity (Lead Director / Orchestrator)
+- **Scope**:
+  - `POST /api/v1/elements/query`: Parametric element query and bulk filtering (`QueryCommandHandler.QueryElements`) by `model_role`, `material`, `section_name`, `assembly_mark`, `single_part_mark`, `element_types`, and `handles`.
+  - `GET /api/v1/elements/joints-catalog`: Discovery catalog (`QueryCommandHandler.GetJointsCatalog`) returning supported connection macros (`BasePlate`, `ClipAngle`, `EndPlate`, `ApexHaunch`), internal rule names, and primary/secondary member roles.
+  - `GET /api/v1/elements/validate-section`: Profile verification (`QueryCommandHandler.ValidateSection`) against the active Advance Steel `AstorProfiles` database using `ProfilesManager.GetProfTypeAsDefault`.
+  - Python MCP tools: `query_elements`, `get_supported_joints_catalog`, `validate_section` exposed in `server.py` and `diagnostic_tools.py`.
+  - Mock server endpoints and offline tests in `test_tools.py` and `TestDispatcherRouting`.
+- **Verification**:
+  - `dotnet build src/as_plugin/EMV.AdvanceSteel.Plugin.csproj -c Release` passed (0 errors, 1 benign warning).
+  - `python -m pytest tests/` passed (39/39 tests green).
+  - Automated deployment of updated bundle via `python scripts/deploy_bundle.py`.
+
 ---
 
 ## 🧠 Key Advance Steel Domain Findings
@@ -85,4 +98,6 @@
    Advance Steel models rectangular bolt grids via `Autodesk.AdvanceSteel.Modelling.FinitRectScrewBoltPattern` (deriving from `CountableScrewBoltPattern` -> `ScrewBoltPattern` -> `BoltPattern`). The pattern defines two opposite corner points and plane vectors, then binds to structural parts via `pattern.Connect(FilerObject[] elems, eAssemblyLocation location)`.
 6. **PolyBeams & Polylines**:
    Continuous multi-segment beams and curved members are created using `Autodesk.AdvanceSteel.Modelling.PolyBeam`, which wraps `Autodesk.AdvanceSteel.Geometry.Polyline3d` and an orientation reference vector `Vector3d`.
+7. **Profiles Validation via AstorProfiles**:
+   `Autodesk.AdvanceSteel.Profiles.ProfilesManager.GetProfTypeAsDefault(string sectionName)` provides a zero-risk, transaction-free static check in `ASProfilesMgd.dll`. If the section exists in the active Advance Steel database, a valid `ProfileName` is returned with its internal table name. If missing or invalid, an empty or null object is returned.
 

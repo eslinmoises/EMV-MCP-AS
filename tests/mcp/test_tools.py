@@ -203,6 +203,31 @@ class TestMcpTools(unittest.TestCase):
         self.assertEqual(res["data"]["handle"], "PBEAM_601")
         self.assertEqual(res["data"]["vertex_count"], 3)
 
+    def test_query_elements(self):
+        res = diagnostic_tools.query_elements(self.client, model_role="Column")
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["count"], 1)
+        self.assertEqual(res["data"]["elements"][0]["role"], "Column")
+        self.assertEqual(res["data"]["elements"][0]["handle"], "1B2C")
+
+    def test_get_supported_joints_catalog(self):
+        res = diagnostic_tools.get_supported_joints_catalog(self.client)
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["total_count"], 4)
+        joint_types = [j["joint_type"] for j in res["data"]["joints"]]
+        self.assertIn("BasePlate", joint_types)
+        self.assertIn("ClipAngle", joint_types)
+        self.assertIn("EndPlate", joint_types)
+
+    def test_validate_section(self):
+        res_valid = diagnostic_tools.validate_section(self.client, "HEB300")
+        self.assertTrue(res_valid["success"])
+        self.assertTrue(res_valid["data"]["is_valid"])
+
+        res_invalid = diagnostic_tools.validate_section(self.client, "NON_EXISTENT_PROFILE_XYZ")
+        self.assertTrue(res_invalid["success"])
+        self.assertFalse(res_invalid["data"]["is_valid"])
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_COMMANDS = REPO_ROOT / "src" / "as_plugin" / "Commands"
@@ -237,6 +262,10 @@ class TestDispatcherRouting(unittest.TestCase):
         "production/numbering": "ProductionCommandHandler",
         "production/export-nc": "ProductionCommandHandler",
         "production/drawing-status": "ProductionCommandHandler",
+        # CONTRACT-006 query and catalog routes
+        "elements/query": "QueryCommandHandler",
+        "elements/joints-catalog": "QueryCommandHandler",
+        "elements/validate-section": "QueryCommandHandler",
     }
 
     COMMAND_ROUTES = {
@@ -294,6 +323,9 @@ class TestDispatcherRouting(unittest.TestCase):
             ("ProductionCommandHandler.cs", "RunNumbering"),
             ("ProductionCommandHandler.cs", "ExportNc"),
             ("ProductionCommandHandler.cs", "DrawingStatus"),
+            ("QueryCommandHandler.cs", "QueryElements"),
+            ("QueryCommandHandler.cs", "GetJointsCatalog"),
+            ("QueryCommandHandler.cs", "ValidateSection"),
         ):
             path = PLUGIN_COMMANDS / "Handlers" / file_name
             self.assertTrue(path.is_file(), f"{file_name} is missing")
@@ -312,6 +344,7 @@ class TestDispatcherRouting(unittest.TestCase):
             "BoltCommandHandler.cs",
             "PolyBeamCommandHandler.cs",
             "ProductionCommandHandler.cs",
+            "QueryCommandHandler.cs",
         ):
             source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")
             self.assertNotIn("LockDocument()", source, f"{file_name} opens its own document lock")

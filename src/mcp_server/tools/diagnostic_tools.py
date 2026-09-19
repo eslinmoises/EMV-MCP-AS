@@ -77,3 +77,44 @@ def query_elements_in_box(
         endpoint += f"&element_types={','.join(element_types)}"
     return client.get(endpoint)
 
+
+def query_elements(
+    client: AdvanceSteelIpcClient,
+    model_role: Optional[str] = None,
+    material: Optional[str] = None,
+    section_name: Optional[str] = None,
+    assembly_mark: Optional[str] = None,
+    single_part_mark: Optional[str] = None,
+    element_types: Optional[List[str]] = None,
+    handles: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Filter and query model elements by role, material, profile, mark, type, or handles."""
+    payload: Dict[str, Any] = {}
+    if model_role is not None:
+        payload["model_role"] = model_role
+    if material is not None:
+        payload["material"] = material
+    if section_name is not None:
+        payload["section_name"] = section_name
+    if assembly_mark is not None:
+        payload["assembly_mark"] = assembly_mark
+    if single_part_mark is not None:
+        payload["single_part_mark"] = single_part_mark
+    if element_types is not None:
+        payload["element_types"] = element_types
+    if handles is not None:
+        payload["handles"] = handles
+    return client.post("elements/query", payload)
+
+
+def get_supported_joints_catalog(client: AdvanceSteelIpcClient) -> Dict[str, Any]:
+    """Retrieve the catalog of supported Advance Steel connection macros and their requirements."""
+    return client.get("elements/joints-catalog")
+
+
+def validate_section(client: AdvanceSteelIpcClient, section_name: str) -> Dict[str, Any]:
+    """Check whether a profile section exists in the active Advance Steel AstorProfiles catalogue."""
+    encoded = urllib.parse.quote(section_name)
+    return client.get(f"elements/validate-section?section_name={encoded}")
+
+

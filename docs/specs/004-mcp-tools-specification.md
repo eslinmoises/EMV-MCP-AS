@@ -55,6 +55,32 @@
   - `element_types` (`list[str]`, optional): filter by type name.
 - **Returns**: `{"elements": list[ElementDetails], "count": int, "box": {"min_point": list[float], "max_point": list[float]}}`.
 
+### `query_elements`
+- **Endpoint**: `POST /api/v1/elements/query`
+- **Description**: Filters and queries model elements matching combined criteria: model role, material, section name, assembly mark, single part mark, element type, or specific handles.
+- **Parameters**:
+  - `model_role` (`str`, optional): filter by Advance Steel role (e.g. "Column", "Beam", "BasePlate").
+  - `material` (`str`, optional): filter by material grade (e.g. "S275JR", "S355JR").
+  - `section_name` (`str`, optional): filter by profile name (e.g. "HEB300", "IPE240").
+  - `assembly_mark` (`str`, optional): filter by assigned assembly mark (e.g. "C1").
+  - `single_part_mark` (`str`, optional): filter by assigned single-part mark (e.g. "p1").
+  - `element_types` (`list[str]`, optional): filter by object types (e.g. `["StraightBeam", "Plate"]`).
+  - `handles` (`list[str]`, optional): restrict query to a specific list of handles.
+- **Returns**: `{"elements": list[ElementDetails], "count": int, "filters_applied": dict}`.
+
+### `get_supported_joints_catalog`
+- **Endpoint**: `GET /api/v1/elements/joints-catalog`
+- **Description**: Returns the dictionary of Advance Steel parametric joints supported by the system, their friendly aliases, internal macro rule names, and required connection member roles.
+- **Parameters**: None.
+- **Returns**: `{"joints": list[JointCatalogEntry], "total_count": int}`.
+
+### `validate_section`
+- **Endpoint**: `GET /api/v1/elements/validate-section?section_name=HEB300`
+- **Description**: Checks whether a profile section exists in the active Advance Steel AstorProfiles database.
+- **Parameters**:
+  - `section_name` (`str`, required): Profile name to validate (e.g. "HEB300", "IPE240").
+- **Returns**: `{"section_name": str, "is_valid": bool, "message": str}`.
+
 ### `capture_viewport`
 - **Description**: Captures a PNG screenshot of the current 3D viewport rendered frame for visual verification by multimodal LLMs.
 - **Parameters**: None.

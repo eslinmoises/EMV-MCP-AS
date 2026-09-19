@@ -65,12 +65,15 @@ The system uses a **Decoupled Hybrid Architecture** engineered for maximum stabi
 ### 🔍 Diagnostic & Reading Tools
 - `get_active_model_info`: General model metadata, units (metric/imperial), AS version, and element counts.
 - `get_selected_elements`: Read full properties of whatever is currently selected in Advance Steel.
+- `query_elements`: Filter and query model elements in bulk by role, material, profile, mark, type, or handles.
+- `query_elements_in_box`: Find all members inside a 3D bounding box (ideal for checking connection nodes).
+- `get_supported_joints_catalog`: Retrieve the catalog of supported Advance Steel connection macros and their input requirements.
+- `validate_section`: Verify whether a profile section name exists in the active Advance Steel AstorProfiles database before modeling.
 - `verify_welds_and_assemblies`: Check workshop vs. site welds, throat sizes, and connected parts.
 - `inspect_main_part` / `set_main_part`: Identify and validate Main Parts; reassign them when needed.
 - `audit_assembly_integrity`: Scan for orphaned plates, disconnected joints, or unnumbered parts.
 - `detect_clashes_and_clearances`: Run collision and clearance checks.
 - `get_ucs_and_grids`: Inspect active coordinate systems, grid axes, and elevations.
-- `query_elements_in_box`: Find all members inside a 3D bounding box (ideal for checking connection nodes).
 - `capture_viewport`: Capture a PNG screenshot of the current 3D viewport for visual AI verification.
 
 ### 📐 Generative Modeling & Editing Tools

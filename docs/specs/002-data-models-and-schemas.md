@@ -251,7 +251,81 @@ envelope are added by the transport layer (SPEC-001 §4) and are not part of the
 
 ---
 
-## 6. Advance Steel 2026 .NET API Mapping Reference
+## 6. Bulk Query & Catalogs Schemas
+
+### Element Query Response (`POST /api/v1/elements/query`)
+```json
+{
+  "elements": [
+    {
+      "handle": "1B2C",
+      "type": "StraightBeam",
+      "section_name": "HEB300",
+      "material": "S275JR",
+      "model_role": "Column",
+      "assembly_mark": "C1",
+      "single_part_mark": "p1",
+      "is_main_part": true,
+      "weight_kg": 468.2
+    }
+  ],
+  "count": 1,
+  "filters_applied": {
+    "model_role": "Column",
+    "material": "S275JR"
+  }
+}
+```
+
+### Supported Joints Catalog Response (`GET /api/v1/elements/joints-catalog`)
+```json
+{
+  "joints": [
+    {
+      "joint_type": "BasePlate",
+      "rule_name": "AstorJoints.BasePlate",
+      "description": "Column base plate with anchor bolts, stiffeners, and grout bed.",
+      "primary_roles": ["Column"],
+      "secondary_roles": []
+    },
+    {
+      "joint_type": "ClipAngle",
+      "rule_name": "AstorJoints.ClipAngle",
+      "description": "Beam to column web/flange or beam to beam clip angle connection.",
+      "primary_roles": ["Column", "Beam"],
+      "secondary_roles": ["Beam"]
+    },
+    {
+      "joint_type": "EndPlate",
+      "rule_name": "AstorJoints.EndPlate",
+      "description": "Bolted end plate connection between beam and column or beam splice.",
+      "primary_roles": ["Column", "Beam"],
+      "secondary_roles": ["Beam"]
+    },
+    {
+      "joint_type": "ApexHaunch",
+      "rule_name": "AstorJoints.ApexHaunch",
+      "description": "Gable roof ridge apex connection with haunch reinforcement.",
+      "primary_roles": ["Rafter"],
+      "secondary_roles": ["Rafter"]
+    }
+  ],
+  "total_count": 4
+}
+```
+
+### Section Validation Response (`GET /api/v1/elements/validate-section`)
+```json
+{
+  "section_name": "HEB300",
+  "is_valid": true,
+  "message": "Section exists in AstorProfiles catalogue."
+}
+```
+
+---
+
+## 7. Advance Steel 2026 .NET API Mapping Reference
 As extracted by assembly reflection:
 - **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
 - **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`

@@ -66,6 +66,38 @@ try:
         return diagnostic_tools.query_elements_in_box(client, min_point, max_point, element_types)
 
     @mcp.tool()
+    def query_elements(
+        model_role: Optional[str] = None,
+        material: Optional[str] = None,
+        section_name: Optional[str] = None,
+        assembly_mark: Optional[str] = None,
+        single_part_mark: Optional[str] = None,
+        element_types: Optional[List[str]] = None,
+        handles: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Filter and query model elements by role, material, profile, mark, type, or handles."""
+        return diagnostic_tools.query_elements(
+            client,
+            model_role,
+            material,
+            section_name,
+            assembly_mark,
+            single_part_mark,
+            element_types,
+            handles,
+        )
+
+    @mcp.tool()
+    def get_supported_joints_catalog() -> Dict[str, Any]:
+        """Retrieve the catalog of supported Advance Steel connection macros and their requirements."""
+        return diagnostic_tools.get_supported_joints_catalog(client)
+
+    @mcp.tool()
+    def validate_section(section_name: str) -> Dict[str, Any]:
+        """Check whether a profile section exists in the active Advance Steel AstorProfiles catalogue."""
+        return diagnostic_tools.validate_section(client, section_name)
+
+    @mcp.tool()
     def create_straight_beam(
         start_point: List[float],
         end_point: List[float],

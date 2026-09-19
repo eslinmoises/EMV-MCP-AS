@@ -355,6 +355,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
         private static CommandResult Route(CommandContext ctx) => ctx.Path switch
         {
             "elements/selected" => SelectionQuery.GetSelectedElements(ctx),
+            "elements/query" => QueryCommandHandler.QueryElements(ctx),
+            "elements/joints-catalog" => QueryCommandHandler.GetJointsCatalog(ctx),
+            "elements/validate-section" => QueryCommandHandler.ValidateSection(ctx),
             "elements/beam" => BeamCommandHandler.Create(ctx),
             "elements/plate" => PlateCommandHandler.Create(ctx),
             "elements/bolt" => BoltCommandHandler.Create(ctx),
@@ -393,6 +396,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
         private static readonly HashSet<string> KnownRoutes = new(StringComparer.OrdinalIgnoreCase)
         {
             "elements/selected",
+            "elements/query",
+            "elements/joints-catalog",
+            "elements/validate-section",
             "elements/beam",
             "elements/plate",
             "elements/bolt",

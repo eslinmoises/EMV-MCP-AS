@@ -137,6 +137,63 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     mark for value in requested_marks for mark in value.split(",") if mark
                 ]
             self._send_envelope(data=self._drawing_status_report(assembly_marks))
+        elif path == "/api/v1/elements/joints-catalog":
+            self._send_envelope(
+                data={
+                    "total_count": 4,
+                    "joints": [
+                        {
+                            "joint_type": "BasePlate",
+                            "rule_name": "AstorJoints.BasePlate",
+                            "description": "Column base plate with anchor bolts, stiffeners, and grout bed.",
+                            "primary_roles": ["Column"],
+                            "secondary_roles": [],
+                        },
+                        {
+                            "joint_type": "ClipAngle",
+                            "rule_name": "AstorJoints.ClipAngle",
+                            "description": "Beam to column web/flange or beam to beam clip angle connection.",
+                            "primary_roles": ["Column", "Beam"],
+                            "secondary_roles": ["Beam"],
+                        },
+                        {
+                            "joint_type": "EndPlate",
+                            "rule_name": "AstorJoints.EndPlate",
+                            "description": "Bolted end plate connection between beam and column or beam splice.",
+                            "primary_roles": ["Column", "Beam"],
+                            "secondary_roles": ["Beam"],
+                        },
+                        {
+                            "joint_type": "ApexHaunch",
+                            "rule_name": "AstorJoints.ApexHaunch",
+                            "description": "Gable roof ridge apex connection with haunch reinforcement.",
+                            "primary_roles": ["Rafter"],
+                            "secondary_roles": ["Rafter"],
+                        },
+                    ],
+                }
+            )
+        elif path == "/api/v1/elements/validate-section":
+            query = parse_qs(parsed.query, keep_blank_values=True)
+            section_name = query.get("section_name", query.get("name", [""]))[0]
+            if not section_name:
+                self._send_envelope(
+                    error={"code": "MISSING_PARAMETER", "message": "Parameter 'section_name' is required."},
+                    status_code=400,
+                )
+            else:
+                is_valid = section_name.upper() in [
+                    "HEB300", "HEA200", "HEA240", "IPE300", "IPE200", "UB203X133X25", "CHS114.3X6.3"
+                ]
+                self._send_envelope(
+                    data={
+                        "section_name": section_name,
+                        "is_valid": is_valid,
+                        "message": f"Section '{section_name}' exists in AstorProfiles catalogue."
+                        if is_valid
+                        else f"Section '{section_name}' was not found in AstorProfiles database.",
+                    }
+                )
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},
@@ -276,6 +333,53 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     "files": files,
                     "skipped": [],
                     "warnings": [],
+                }
+            )
+        elif path == "/api/v1/elements/query":
+            mock_elements = [
+                {
+                    "handle": "1B2C",
+                    "type": "StraightBeam",
+                    "role": "Column",
+                    "section_name": "HEB300",
+                    "material": "S275JR",
+                    "lot_phase": "Phase 1",
+                    "single_part_mark": "c1",
+                    "assembly_mark": "C1",
+                    "length_mm": 4000.0,
+                    "weight_kg": 468.0,
+                    "center_point": [0.0, 0.0, 2000.0],
+                },
+                {
+                    "handle": "2D3E",
+                    "type": "StraightBeam",
+                    "role": "Beam",
+                    "section_name": "IPE300",
+                    "material": "S275JR",
+                    "lot_phase": "Phase 1",
+                    "single_part_mark": "b1",
+                    "assembly_mark": "B1",
+                    "length_mm": 6000.0,
+                    "weight_kg": 253.2,
+                    "center_point": [3000.0, 0.0, 4000.0],
+                },
+            ]
+            role = body_json.get("model_role")
+            types = body_json.get("element_types")
+            sect = body_json.get("section_name")
+            filtered = mock_elements
+            if role:
+                filtered = [e for e in filtered if e["role"].lower() == role.lower()]
+            if types:
+                type_set = set(t.lower() for t in types)
+                filtered = [e for e in filtered if e["type"].lower() in type_set]
+            if sect:
+                filtered = [e for e in filtered if sect.lower() in e["section_name"].lower()]
+            self._send_envelope(
+                data={
+                    "elements": filtered,
+                    "count": len(filtered),
+                    "filters_applied": body_json,
                 }
             )
         else:
