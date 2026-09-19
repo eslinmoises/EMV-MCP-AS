@@ -46,6 +46,15 @@
 - **Parameters**: None.
 - **Returns**: `UcsAndGridsResponse`.
 
+### `query_elements_in_box`
+- **Endpoint**: `GET /api/v1/spatial/box`
+- **Description**: Finds all Advance Steel elements (beams, plates, bolts, welds) whose 3D bounding extents intersect a specified 3D box `[min_point, max_point]`.
+- **Parameters**:
+  - `min_point` (`list[float]`, required, query `?min_point=x,y,z`): minimum corner `[x, y, z]` in mm.
+  - `max_point` (`list[float]`, required, query `?max_point=x,y,z`): maximum corner `[x, y, z]` in mm.
+  - `element_types` (`list[str]`, optional): filter by type name.
+- **Returns**: `{"elements": list[ElementDetails], "count": int, "box": {"min_point": list[float], "max_point": list[float]}}`.
+
 ### `capture_viewport`
 - **Description**: Captures a PNG screenshot of the current 3D viewport rendered frame for visual verification by multimodal LLMs.
 - **Parameters**: None.
@@ -105,6 +114,33 @@
 - **Description**: Updates material, model role, coating or rotation of an existing element. Properties absent from the request are untouched; a property the element cannot carry is an error, never a silent skip.
 - **Parameters**: `handle` (`str`, required), `material`, `model_role`, `coating` (`str`, optional), `rotation_deg` (`float`, optional).
 - **Returns**: `{"handle": str, "modified_properties": dict, "success": true}`.
+
+### `create_bolt_pattern`
+- **Endpoint**: `POST /api/v1/elements/bolt`
+- **Description**: Creates a rectangular bolt pattern connecting two or more structural parts.
+- **Parameters**:
+  - `connected_handles` (`list[str]`, required): Handles of beams and plates to connect.
+  - `origin` (`list[float]`, required): `[x, y, z]` insertion center point.
+  - `normal` (`list[float]`, optional, default=[0, 0, 1]): `[nx, ny, nz]` bolt direction vector.
+  - `bolt_standard` (`str`, optional, default="DIN 931"): Standard/norm (e.g. "DIN 931", "ISO 4014", "A325").
+  - `bolt_grade` (`str`, optional, default="8.8"): Steel grade (e.g. "8.8", "10.9").
+  - `bolt_diameter_mm` (`float`, optional, default=20.0): Bolt nominal diameter.
+  - `nx` (`int`, optional, default=2): Number of bolts along X.
+  - `ny` (`int`, optional, default=2): Number of bolts along Y.
+  - `dx` (`float`, optional, default=70.0): Spacing along X in mm.
+  - `dy` (`float`, optional, default=70.0): Spacing along Y in mm.
+  - `is_site_bolt` (`bool`, optional, default=true): Site vs. workshop assembly connection.
+- **Returns**: `{"handle": str, "bolt_standard": str, "bolt_grade": str, "bolt_diameter_mm": float, "count": int, "connected_handles": list[str]}`.
+
+### `create_poly_beam`
+- **Endpoint**: `POST /api/v1/elements/poly-beam`
+- **Description**: Creates a continuous multi-segment polybeam or curved member defined by a sequence of 3D points.
+- **Parameters**:
+  - `points` (`list[list[float]]`, required): At least 2 points `[[x,y,z], ...]`.
+  - `section_name` (`str`, required): Profile section name (e.g. "HEA200", "IPE240").
+  - `material` (`str`, optional, default="S275JR"): Steel material grade.
+  - `model_role` (`str`, optional, default="Beam"): Advance Steel model role.
+- **Returns**: `{"handle": str, "length_mm": float, "weight_kg": float}`.
 
 ---
 

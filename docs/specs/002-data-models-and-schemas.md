@@ -199,10 +199,64 @@ envelope are added by the transport layer (SPEC-001 §4) and are not part of the
 
 ---
 
-## 5. Advance Steel 2026 .NET API Mapping Reference
+## 5. Bolting, Node Queries & PolyBeam Schemas
+
+### Spatial Box Query (`GET /api/v1/spatial/box`)
+```json
+{
+  "elements": [
+    {
+      "handle": "1B2C",
+      "type": "StraightBeam",
+      "section_name": "HEB300",
+      "material": "S275JR",
+      "model_role": "Column",
+      "bounding_box": {
+        "min_point": [0.0, 0.0, 0.0],
+        "max_point": [300.0, 300.0, 4000.0]
+      }
+    }
+  ],
+  "count": 1,
+  "box": {
+    "min_point": [-100.0, -100.0, -100.0],
+    "max_point": [500.0, 500.0, 1000.0]
+  }
+}
+```
+
+### Bolt Pattern Data (`POST /api/v1/elements/bolt`)
+```json
+{
+  "handle": "BOLT_501",
+  "bolt_standard": "DIN 931",
+  "bolt_grade": "8.8",
+  "bolt_diameter_mm": 20.0,
+  "count": 4,
+  "connected_handles": ["1B2C", "2D3E"],
+  "is_site_bolt": true
+}
+```
+
+### PolyBeam Data (`POST /api/v1/elements/poly-beam`)
+```json
+{
+  "handle": "PBEAM_601",
+  "section_name": "HEA200",
+  "length_mm": 6283.18,
+  "weight_kg": 265.8,
+  "vertex_count": 3
+}
+```
+
+---
+
+## 6. Advance Steel 2026 .NET API Mapping Reference
 As extracted by assembly reflection:
 - **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
 - **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`
+- **PolyBeams**: `Autodesk.AdvanceSteel.Modelling.PolyBeam`
+- **Bolts**: `Autodesk.AdvanceSteel.Modelling.BoltPattern`
 - **Welds**: `Autodesk.AdvanceSteel.Modelling.WeldPattern`
 - **Location**: `Autodesk.AdvanceSteel.ConstructionTypes.AtomicElement.eAssemblyLocation` (`kInShop`, `kOnSite`)
 - **Assembly & Main Part**: Managed via `AtomicElement.IsMainPart` and connection graphs (`GetConnectedObjects(..., kInShop)`).
