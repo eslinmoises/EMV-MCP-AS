@@ -77,9 +77,14 @@ The system uses a **Decoupled Hybrid Architecture** engineered for maximum stabi
 - `create_straight_beam`: Create standard profiles (HEA, HEB, IPE, UPN, tubes) between 3D points.
 - `create_curved_beam`: Create curved beams defined by three points or radius.
 - `create_plate`: Create rectangular or polygonal contour plates.
-- `create_standard_joint`: Apply standard Advance Steel connection macros.
-- `apply_beam_cut_or_notch`: Apply cuts, miters, and notches to profiles.
-- `modify_element_properties`: Update material, model role, coating, and rotation.
+- `create_standard_joint`: Apply standard Advance Steel connection macros (BasePlate, ClipAngle, EndPlate, ApexHaunch).
+- `apply_beam_cut_or_notch`: Apply cuts, miters, and notches to profiles (shortening, web/flange notches).
+- `modify_element_properties`: Update material, model role, coating, and rotation by handle.
+
+### 🏭 Production & Fabrication Tools
+- `run_automatic_numbering`: Run the Advance Steel numbering engine to assign single-part (`p1`, `p2`) and assembly (`C1`, `B1`) marks with conflict reporting.
+- `export_dstv_nc_files`: Generate standard DSTV (.nc / .nc1) files for CNC sawing, drilling, and plasma profiling machines.
+- `get_drawing_status`: Inspect whether workshop fabrication drawings exist and are up to date with the 3D model.
 
 ### ⚡ Procedural Scripting
 - `execute_csharp_script`: Execute in-memory dynamic C# code using Roslyn with transactional rollback.
@@ -94,7 +99,6 @@ This repository is built using **Spec-Driven Development (SDD)** with formal **A
 | :--- | :--- | :--- |
 | **Director / Lead Architect** | **Antigravity (Gemini 3.8 Flash)** | Specs management (`docs/specs/`), contract design (`orchestration/contracts/`), task decomposition, and PR approval. |
 | **Worker Agent** | **Claude Code (CLI)** | Primary C# .NET 8 plugin engine, FastMCP server logic, IPC protocol client. |
-| **Worker Agent** | **Cursor AI / Codex** | Refactoring, automated tests, domain rule verification. |
 
 ### Contract Workflow
 ```text
@@ -108,16 +112,22 @@ Spec in docs/specs/ ➔ Contract in orchestration/contracts/ ➔ Worker Implemen
 ### Prerequisites
 - **Windows 10 / 11 (x64)**
 - **Autodesk Advance Steel 2025 or 2026**
-- **.NET 8 SDK**
+- **.NET 8 SDK** (8.0.400+)
 - **Python 3.11+** with `uv` installed (`pip install uv`)
 
-### 1. Install the Advance Steel Add-in
-Copy the plugin bundle to your Autodesk ApplicationPlugins folder:
+### 1. Build and Install the Add-in
+Build the C# plugin and deploy the `.bundle` directly into Autodesk ApplicationPlugins:
 ```powershell
-# Default Autodesk ApplicationPlugins directory
-Copy-Item -Recurse "src/as_plugin/EMV-AdvanceSteel.bundle" "$env:APPDATA/Autodesk/ApplicationPlugins/"
+# Build C# add-in in Release mode
+dotnet build src/as_plugin/EMV.AdvanceSteel.Plugin.csproj -c Release
+
+# Deploy bundle to %APPDATA%/Autodesk/ApplicationPlugins/EMV-AdvanceSteel.bundle
+python scripts/deploy_bundle.py
 ```
-When starting Advance Steel, the add-in loads automatically and starts the local IPC server on `http://127.0.0.1:5055`.
+- **If Advance Steel is starting**: The bundle loads automatically on startup.
+- **If Advance Steel is already running**: In the CAD command line, run `NETLOAD` and select:
+  `%APPDATA%\Autodesk\ApplicationPlugins\EMV-AdvanceSteel.bundle\Contents\Release\EMV.AdvanceSteel.Plugin.dll`
+  Verify with CAD command `EMV_MCP_STATUS`.
 
 ### 2. Configure Claude Code
 Add `emv-mcp-as` to your Claude Code configuration (`~/.claude.json` or project MCP config):
