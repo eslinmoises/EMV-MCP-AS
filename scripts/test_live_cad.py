@@ -132,11 +132,55 @@ def main():
             print(f"    - [{elem.get('handle')}] {elem.get('type')}: {elem.get('section_name') or elem.get('model_role')}")
 
     # 9. Viewport Capture
-    print("\n[9/9] Capturing 3D viewport screenshot...")
+    print("\n[9/12] Capturing 3D viewport screenshot...")
     vp_res = call_api("GET", "viewport/capture")
     if vp_res.get("success"):
         img_len = len(vp_res["data"].get("image_base64", ""))
         print(f"[+] Viewport screenshot captured successfully! ({img_len} bytes base64)")
+
+    # 10. Generative Portal Frame Macro
+    print("\n[10/12] Generating Parametric Portal Frame (span=12m, eave=6m, ridge=7.5m)...")
+    pf_res = call_api("POST", "elements/portal-frame", {
+        "span_mm": 12000.0,
+        "eave_height_mm": 6000.0,
+        "ridge_height_mm": 7500.0,
+        "origin_x": 6000.0,
+        "origin_y": 0.0,
+        "column_section": "HEA 300",
+        "rafter_section": "IPE 300",
+        "material": "S275JR",
+        "create_base_plates": True,
+    })
+    if pf_res.get("success"):
+        pf_data = pf_res["data"]
+        print(f"[+] Portal Frame created: ID={pf_data.get('portal_frame_id')}")
+        print(f"    Columns: Left={pf_data.get('column_left_handle')}, Right={pf_data.get('column_right_handle')}")
+        print(f"    Rafters: Left={pf_data.get('rafter_left_handle')}, Right={pf_data.get('rafter_right_handle')}")
+        print(f"    Base Plates: {pf_data.get('base_plate_handles')}")
+    else:
+        print(f"[-] Portal Frame generation failed: {pf_res.get('error', {}).get('message')}")
+
+    # 11. Detailing Doctor (Audit & Repair)
+    print("\n[11/12] Running Detailing Doctor (infer roles, standardize coatings)...")
+    doc_res = call_api("POST", "audit/repair", {
+        "repair_actions": ["infer_missing_roles", "standardize_coatings", "assign_orphaned_plates"],
+        "default_coating": "Galvanized",
+        "dry_run": False,
+    })
+    if doc_res.get("success"):
+        doc_data = doc_res["data"]
+        print(f"[+] Doctor Report: {doc_data.get('summary')}")
+        for rep in doc_data.get("repairs_applied", []):
+            print(f"    - [{rep.get('action')}] {rep.get('description')} (handle={rep.get('element_handle')})")
+
+    # 12. Bill of Materials (BOM) / Material Takeoff
+    print("\n[12/12] Computing Model-Wide Bill of Materials (BOM)...")
+    bom_res = call_api("POST", "production/bom", {"group_by": "profile"})
+    if bom_res.get("success"):
+        bom_data = bom_res["data"]
+        print(f"[+] MTO: Total Weight = {bom_data.get('total_weight_kg')} kg ({bom_data.get('total_tonnage')} tonnes)")
+        print(f"    Coating Area = {bom_data.get('total_coating_area_m2')} m2")
+        print(f"    Elements Scanned = {bom_data.get('elements_scanned')}")
 
     print("\n" + "=" * 60)
     print("ALL LIVE CAD VERIFICATION CHECKS PASSED SUCCESSFULLY!")
@@ -145,3 +189,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
