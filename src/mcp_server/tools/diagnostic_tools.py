@@ -118,3 +118,24 @@ def validate_section(client: AdvanceSteelIpcClient, section_name: str) -> Dict[s
     return client.get(f"elements/validate-section?section_name={encoded}")
 
 
+def apply_detailing_repairs(
+    client: AdvanceSteelIpcClient,
+    repair_actions: List[str],
+    element_handles: Optional[List[str]] = None,
+    default_coating: str = "Galvanized",
+    default_material: str = "S275JR",
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Detailing Doctor: automatically fix orphaned parts, missing model roles, or invalid coatings."""
+    payload: Dict[str, Any] = {
+        "repair_actions": repair_actions,
+        "default_coating": default_coating,
+        "default_material": default_material,
+        "dry_run": dry_run,
+    }
+    if element_handles is not None:
+        payload["element_handles"] = element_handles
+    return client.post("audit/repair", payload)
+
+
+

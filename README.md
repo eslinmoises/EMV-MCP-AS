@@ -73,10 +73,12 @@ The system uses a **Decoupled Hybrid Architecture** engineered for maximum stabi
 - `inspect_main_part` / `set_main_part`: Identify and validate Main Parts; reassign them when needed.
 - `audit_assembly_integrity`: Scan for orphaned plates, disconnected joints, or unnumbered parts.
 - `detect_clashes_and_clearances`: Run collision and clearance checks.
+- `apply_detailing_repairs`: "Detailing Doctor" automatic repair engine — infers missing model roles, standardizes coatings, fixes orphaned plates, and repairs assemblies.
 - `get_ucs_and_grids`: Inspect active coordinate systems, grid axes, and elevations.
 - `capture_viewport`: Capture a PNG screenshot of the current 3D viewport for visual AI verification.
 
 ### 📐 Generative Modeling & Editing Tools
+- `create_portal_frame`: One-shot parametric structural portal frame generator (columns, pitched rafters, base plates, and anchor bolts).
 - `create_straight_beam`: Create standard profiles (HEA, HEB, IPE, UPN, tubes) between 3D points.
 - `create_poly_beam`: Create continuous multi-segment polybeams or curved members defined by 3D points.
 - `create_plate`: Create rectangular or polygonal contour plates.

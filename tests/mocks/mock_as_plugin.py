@@ -430,6 +430,67 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     "elements_scanned": scanned,
                 }
             )
+        elif path == "/api/v1/elements/portal-frame":
+            span = float(body_json.get("span_mm", 12000.0))
+            eave = float(body_json.get("eave_height_mm", 6000.0))
+            ridge = float(body_json.get("ridge_height_mm", 7500.0))
+            col_sec = body_json.get("column_section", "HEA 300")
+            raf_sec = body_json.get("rafter_section", "IPE 300")
+            mat = body_json.get("material", "S275JR")
+            has_bp = bool(body_json.get("create_base_plates", True))
+            bp_handles = ["BP_L_01", "BP_R_02"] if has_bp else []
+            self._send_envelope(
+                data={
+                    "portal_frame_id": "PF_001",
+                    "column_left_handle": "COL_L_01",
+                    "column_right_handle": "COL_R_02",
+                    "rafter_left_handle": "RAF_L_01",
+                    "rafter_right_handle": "RAF_R_02",
+                    "base_plate_handles": bp_handles,
+                    "geometry": {
+                        "span_mm": span,
+                        "eave_height_mm": eave,
+                        "ridge_height_mm": ridge,
+                        "column_section": col_sec,
+                        "rafter_section": raf_sec,
+                        "material": mat,
+                    },
+                    "total_weight_kg": 1450.0,
+                }
+            )
+        elif path == "/api/v1/audit/repair":
+            actions = body_json.get("repair_actions", [])
+            dry_run = bool(body_json.get("dry_run", False))
+            repairs = []
+            if "assign_orphaned_plates" in actions:
+                repairs.append({
+                    "action": "assign_orphaned_plates",
+                    "element_handle": "PL_ORPHAN_01",
+                    "target_assembly_handle": "COL_01",
+                    "description": "Attached orphaned workshop plate to closest column assembly.",
+                })
+            if "infer_missing_roles" in actions:
+                repairs.append({
+                    "action": "infer_missing_roles",
+                    "element_handle": "BEAM_NOROLE_02",
+                    "target_assembly_handle": None,
+                    "description": "Inferred model role 'Column' based on vertical orientation (z-dir > 0.75).",
+                })
+            if "standardize_coatings" in actions:
+                repairs.append({
+                    "action": "standardize_coatings",
+                    "element_handle": "BEAM_COAT_03",
+                    "target_assembly_handle": None,
+                    "description": "Updated coating from 'None' to 'Galvanized'.",
+                })
+            self._send_envelope(
+                data={
+                    "repairs_applied": repairs,
+                    "count": len(repairs),
+                    "dry_run": dry_run,
+                    "summary": f"{len(repairs)} detailing issues identified and {'previewed' if dry_run else 'repaired'}.",
+                }
+            )
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},
@@ -448,7 +509,14 @@ class MockAdvanceSteelServer:
         self.thread = None
 
     def start(self):
-        self.server = ThreadingHTTPServer((self.host, self.port), MockAdvanceSteelHandler)
+        try:
+            self.server = ThreadingHTTPServer((self.host, self.port), MockAdvanceSteelHandler)
+        except (PermissionError, OSError):
+            import socket
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind((self.host, 0))
+                self.port = s.getsockname()[1]
+            self.server = ThreadingHTTPServer((self.host, self.port), MockAdvanceSteelHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         print(f"Mock Advance Steel server listening on http://{self.host}:{self.port}")

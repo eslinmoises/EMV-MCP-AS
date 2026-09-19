@@ -15,11 +15,13 @@ namespace EMV.AdvanceSteel.Plugin.Host
     public class ExtensionApplication : IExtensionApplication
     {
         private static IpcHttpServer? _ipcServer;
+        public static System.Threading.SynchronizationContext? MainSyncContext { get; private set; }
 
         public void Initialize()
         {
             try
             {
+                MainSyncContext = System.Threading.SynchronizationContext.Current;
                 var doc = AcApplication.DocumentManager.MdiActiveDocument;
                 var ed = doc?.Editor;
                 ed?.WriteMessage("\n[EMV-MCP-AS] Loading Advance Steel MCP Extension (.NET 8)...\n");

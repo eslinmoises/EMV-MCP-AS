@@ -35,6 +35,24 @@
 - **Parameters**: None.
 - **Returns**: `AuditReport`.
 
+### `apply_detailing_repairs`
+- **Endpoint**: `POST /api/v1/audit/repair`
+- **Description**: Autonomous "Detailing Doctor" engine that inspects the model for common structural detailing defects and repairs them automatically:
+  1. Detects elements with missing/empty Advance Steel `Role` and infers appropriate roles (`Column`, `Beam`, `Rafter`, `BasePlate`) based on geometry, vector alignment, and position.
+  2. Identifies assemblies lacking an explicit `MainPart` and sets the heaviest/longest primary profile as the Main Part (`IsMainPart = true`).
+  3. Detects orphaned plates that share coplanar faces with primary members and joins them with workshop welds or anchors.
+- **Parameters**:
+  - `element_handles` (`list[str]`, optional): Restrict repairs to specified elements. Omitted ⇒ entire model.
+  - `fix_roles` (`bool`, optional, default=true): Infer and update missing model roles.
+  - `fix_main_parts` (`bool`, optional, default=true): Assign missing Main Parts to assemblies.
+  - `fix_orphaned_plates` (`bool`, optional, default=true): Attach orphaned connection plates.
+- **Returns**: `RepairReport`:
+  - `repairs_applied`: int
+  - `roles_updated`: list of `{ handle: str, assigned_role: str }`
+  - `main_parts_assigned`: list of `{ assembly_mark: str, main_part_handle: str }`
+  - `orphans_resolved`: int
+  - `warnings`: list of str
+
 ### `detect_clashes_and_clearances`
 - **Description**: Runs native Advance Steel collision checking across the model or selected members.
 - **Parameters**:
@@ -167,6 +185,28 @@
   - `material` (`str`, optional, default="S275JR"): Steel material grade.
   - `model_role` (`str`, optional, default="Beam"): Advance Steel model role.
 - **Returns**: `{"handle": str, "length_mm": float, "weight_kg": float}`.
+
+### `create_portal_frame`
+- **Endpoint**: `POST /api/v1/elements/portal-frame`
+- **Description**: Generates a complete 3D structural steel portal frame (two vertical columns, two pitched rafters, base plates, and anchor bolts) in a single atomic transaction.
+- **Parameters**:
+  - `span_width_mm` (`float`, optional, default=12000.0): Center-to-center distance between columns.
+  - `column_height_mm` (`float`, optional, default=5000.0): Eaves height to top of column.
+  - `ridge_height_mm` (`float`, optional, default=6500.0): Peak roof ridge elevation.
+  - `column_section` (`str`, optional, default="HEB300"): Profile name for columns.
+  - `rafter_section` (`str`, optional, default="IPE360"): Profile name for rafters.
+  - `material` (`str`, optional, default="S275JR"): Steel material grade.
+  - `origin` (`list[float]`, optional, default=[0.0, 0.0, 0.0]): Insertion origin `[x, y, z]` of the left column base.
+  - `include_base_plates` (`bool`, optional, default=true): Generate 25mm base plates and M20 anchor bolts.
+  - `include_connections` (`bool`, optional, default=false): Apply standard joints (ClipAngle/EndPlate at eaves and ApexHaunch at ridge).
+- **Returns**: `PortalFrameDetails`:
+  - `left_column`: `{"handle": str, "section": str, "height_mm": float}`
+  - `right_column`: `{"handle": str, "section": str, "height_mm": float}`
+  - `left_rafter`: `{"handle": str, "section": str, "length_mm": float}`
+  - `right_rafter`: `{"handle": str, "section": str, "length_mm": float}`
+  - `base_plates`: list of plate handles
+  - `bolt_patterns`: list of bolt handles
+  - `total_weight_kg`: float
 
 ---
 

@@ -173,3 +173,38 @@ def create_poly_beam(
     }
     return client.post("elements/poly-beam", payload)
 
+
+def create_portal_frame(
+    client: AdvanceSteelIpcClient,
+    span_mm: float,
+    eave_height_mm: float,
+    ridge_height_mm: float,
+    origin_x: float = 0.0,
+    origin_y: float = 0.0,
+    base_elevation_mm: float = 0.0,
+    column_section: str = "HEA 300",
+    rafter_section: str = "IPE 300",
+    material: str = "S275JR",
+    create_base_plates: bool = True,
+    base_plate_thickness_mm: float = 20.0,
+    base_plate_dimensions_mm: Optional[List[float]] = None,
+) -> Dict[str, Any]:
+    """Generate a complete parametric structural portal frame (columns, rafters, base plates)."""
+    payload: Dict[str, Any] = {
+        "span_mm": span_mm,
+        "eave_height_mm": eave_height_mm,
+        "ridge_height_mm": ridge_height_mm,
+        "origin_x": origin_x,
+        "origin_y": origin_y,
+        "base_elevation_mm": base_elevation_mm,
+        "column_section": column_section,
+        "rafter_section": rafter_section,
+        "material": material,
+        "create_base_plates": create_base_plates,
+        "base_plate_thickness_mm": base_plate_thickness_mm,
+    }
+    if base_plate_dimensions_mm is not None:
+        payload["base_plate_dimensions_mm"] = base_plate_dimensions_mm
+    return client.post("elements/portal-frame", payload)
+
+

@@ -375,7 +375,56 @@ envelope are added by the transport layer (SPEC-001 §4) and are not part of the
 
 ---
 
-## 8. Advance Steel 2026 .NET API Mapping Reference
+## 8. Generative Portal Frame & Detailing Doctor Schemas
+
+### Portal Frame Generation Response (`POST /api/v1/elements/portal-frame`)
+```json
+{
+  "left_column": {
+    "handle": "COL_01",
+    "section": "HEB300",
+    "height_mm": 5000.0
+  },
+  "right_column": {
+    "handle": "COL_02",
+    "section": "HEB300",
+    "height_mm": 5000.0
+  },
+  "left_rafter": {
+    "handle": "RAF_01",
+    "section": "IPE360",
+    "length_mm": 6184.6
+  },
+  "right_rafter": {
+    "handle": "RAF_02",
+    "section": "IPE360",
+    "length_mm": 6184.6
+  },
+  "base_plates": ["BP_01", "BP_02"],
+  "bolt_patterns": ["BOLT_01", "BOLT_02"],
+  "total_weight_kg": 2450.8
+}
+```
+
+### Detailing Doctor Repair Response (`POST /api/v1/audit/repair`)
+```json
+{
+  "repairs_applied": 5,
+  "roles_updated": [
+    { "handle": "1B2C", "assigned_role": "Column" },
+    { "handle": "2D3E", "assigned_role": "Rafter" }
+  ],
+  "main_parts_assigned": [
+    { "assembly_mark": "C1", "main_part_handle": "1B2C" }
+  ],
+  "orphans_resolved": 2,
+  "warnings": []
+}
+```
+
+---
+
+## 9. Advance Steel 2026 .NET API Mapping Reference
 As extracted by assembly reflection:
 - **Plates**: `Autodesk.AdvanceSteel.Modelling.Plate(Plane, Point3d[], double)`
 - **Beams**: `Autodesk.AdvanceSteel.Modelling.StraightBeam(section, startPoint, endPoint, refVector)` with `Beam.eRefAxis`

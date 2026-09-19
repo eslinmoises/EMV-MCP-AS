@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Autodesk.AutoCAD.ApplicationServices;
 using EMV.AdvanceSteel.Plugin.Commands.Handlers;
+using EMV.AdvanceSteel.Plugin.Host;
 
 using AcApplication = Autodesk.AutoCAD.ApplicationServices.Application;
 using AcTransaction = Autodesk.AutoCAD.DatabaseServices.Transaction;
@@ -206,24 +207,31 @@ namespace EMV.AdvanceSteel.Plugin.Commands
         {
             var tcs = new TaskCompletionSource<CommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            void ExecuteWork()
+            {
+                try
+                {
+                    tcs.TrySetResult(ExecuteOnMainThread(method, path, bodyJson));
+                }
+                catch (System.Exception ex)
+                {
+                    tcs.TrySetResult(CommandResult.Fail(
+                        "DISPATCH_ERROR", ex.Message, 500,
+                        "Unexpected failure inside the AutoCAD application context.",
+                        ex.StackTrace));
+                }
+            }
+
             try
             {
-                AcApplication.DocumentManager.ExecuteInApplicationContext(
-                    _ =>
-                    {
-                        try
-                        {
-                            tcs.TrySetResult(ExecuteOnMainThread(method, path, bodyJson));
-                        }
-                        catch (System.Exception ex)
-                        {
-                            tcs.TrySetResult(CommandResult.Fail(
-                                "DISPATCH_ERROR", ex.Message, 500,
-                                "Unexpected failure inside the AutoCAD application context.",
-                                ex.StackTrace));
-                        }
-                    },
-                    null);
+                if (ExtensionApplication.MainSyncContext != null)
+                {
+                    ExtensionApplication.MainSyncContext.Post(_ => ExecuteWork(), null);
+                }
+                else
+                {
+                    AcApplication.DocumentManager.ExecuteInApplicationContext(_ => ExecuteWork(), null);
+                }
             }
             catch (System.Exception ex)
             {
@@ -362,6 +370,7 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/plate" => PlateCommandHandler.Create(ctx),
             "elements/bolt" => BoltCommandHandler.Create(ctx),
             "elements/poly-beam" => PolyBeamCommandHandler.Create(ctx),
+            "elements/portal-frame" => PortalFrameCommandHandler.Create(ctx),
             "elements/joint" => JointCommandHandler.Create(ctx),
             "elements/cut" => FeatureCommandHandler.Apply(ctx),
             "elements/modify" => ModifyCommandHandler.Modify(ctx),
@@ -372,6 +381,7 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "spatial/box" => SpatialCommandHandler.QueryBox(ctx),
             "audit/assembly-integrity" => AuditCommandHandler.AuditAssemblyIntegrity(ctx),
             "audit/clashes" => AuditCommandHandler.DetectClashes(ctx),
+            "audit/repair" => DoctorCommandHandler.Repair(ctx),
             "viewport/capture" => ViewportCommandHandler.Capture(ctx),
             "script/execute" => ScriptRoute(ctx),
             "production/numbering" => ProductionCommandHandler.RunNumbering(ctx),
@@ -404,6 +414,7 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/plate",
             "elements/bolt",
             "elements/poly-beam",
+            "elements/portal-frame",
             "elements/joint",
             "elements/cut",
             "elements/modify",
@@ -414,6 +425,7 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "spatial/box",
             "audit/assembly-integrity",
             "audit/clashes",
+            "audit/repair",
             "viewport/capture",
             "script/execute",
             "production/numbering",

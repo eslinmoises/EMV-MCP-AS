@@ -95,6 +95,24 @@
   - `python -m pytest tests/` passed (41/41 tests green).
   - Automated deployment of updated bundle via `python scripts/deploy_bundle.py`.
 
+### [2026-09-19] CONTRACT-008: Generative Portal Frame Macro & Detailing Doctor
+- **Worker**: Antigravity (Lead Director / Orchestrator)
+- **Scope**:
+  - `POST /api/v1/elements/portal-frame`: One-shot parametric portal frame generator (`PortalFrameCommandHandler.Create`).
+    - Generates 2 vertical columns (`StraightBeam`), 2 pitched rafters (`StraightBeam`), 2 base plates (`Plate`), and 2 anchor bolt patterns (`FinitRectScrewBoltPattern`).
+    - Correct geometry alignment: `Beam.eRefAxis.kSysSys`, base plate normal orientation $+Z$, and physical bolt pattern bindings.
+  - `POST /api/v1/audit/repair`: "Detailing Doctor" automatic auditing & repair engine (`DoctorCommandHandler.Repair`).
+    - Infers missing structural model roles (`Column`, `Rafter`, `Beam`, `BasePlate`) via 3D vector orientation checks.
+    - Assigns missing Main Part designations on shop assemblies based on primary member weight (`atomic.IsMainPart = true`).
+    - Attaches orphaned workshop plates to the nearest primary column/rafter assembly.
+    - Standardizes unspecified coatings (`Galvanized`, `ShopPrimer`) and material grades.
+  - **Thread Synchronization Fix**: Captured AutoCAD main UI `SynchronizationContext` in `ExtensionApplication.Initialize()` and routed dispatches via `SynchronizationContext.Post` to resolve WPF Ribbon `Dispatcher.VerifyAccess()` exceptions on .NET 8.
+  - Python FastMCP tools: `create_portal_frame` and `apply_detailing_repairs` exposed in `server.py`.
+  - Mock server endpoints and tests in `test_tools.py`.
+- **Verification**:
+  - `dotnet build src/as_plugin/EMV.AdvanceSteel.Plugin.csproj -c Release` passed (0 errors, 1 benign warning).
+  - `python -m pytest tests/` passed (43/43 tests green).
+
 ---
 
 ## 🧠 Key Advance Steel Domain Findings

@@ -256,6 +256,56 @@ try:
         return production_tools.get_bill_of_materials(client, element_handles, group_by)
 
     @mcp.tool()
+    def create_portal_frame(
+        span_mm: float,
+        eave_height_mm: float,
+        ridge_height_mm: float,
+        origin_x: float = 0.0,
+        origin_y: float = 0.0,
+        base_elevation_mm: float = 0.0,
+        column_section: str = "HEA 300",
+        rafter_section: str = "IPE 300",
+        material: str = "S275JR",
+        create_base_plates: bool = True,
+        base_plate_thickness_mm: float = 20.0,
+        base_plate_dimensions_mm: Optional[List[float]] = None,
+    ) -> Dict[str, Any]:
+        """Generate a complete parametric structural portal frame (columns, rafters, base plates)."""
+        return modeling_tools.create_portal_frame(
+            client,
+            span_mm=span_mm,
+            eave_height_mm=eave_height_mm,
+            ridge_height_mm=ridge_height_mm,
+            origin_x=origin_x,
+            origin_y=origin_y,
+            base_elevation_mm=base_elevation_mm,
+            column_section=column_section,
+            rafter_section=rafter_section,
+            material=material,
+            create_base_plates=create_base_plates,
+            base_plate_thickness_mm=base_plate_thickness_mm,
+            base_plate_dimensions_mm=base_plate_dimensions_mm,
+        )
+
+    @mcp.tool()
+    def apply_detailing_repairs(
+        repair_actions: List[str],
+        element_handles: Optional[List[str]] = None,
+        default_coating: str = "Galvanized",
+        default_material: str = "S275JR",
+        dry_run: bool = False,
+    ) -> Dict[str, Any]:
+        """Detailing Doctor: automatically fix orphaned parts, missing model roles, or invalid coatings."""
+        return diagnostic_tools.apply_detailing_repairs(
+            client,
+            repair_actions=repair_actions,
+            element_handles=element_handles,
+            default_coating=default_coating,
+            default_material=default_material,
+            dry_run=dry_run,
+        )
+
+    @mcp.tool()
     def execute_csharp_script(script_code: str) -> Dict[str, Any]:
         """Execute dynamic C# Roslyn script in Advance Steel with automatic transaction rollback."""
         return scripting_tools.execute_csharp_script(client, script_code)

@@ -12,7 +12,7 @@ class TestMcpTools(unittest.TestCase):
     def setUpClass(cls):
         cls.server = MockAdvanceSteelServer(host="127.0.0.1", port=5055)
         cls.server.start()
-        cls.client = AdvanceSteelIpcClient(base_url=f"http://127.0.0.1:5055")
+        cls.client = AdvanceSteelIpcClient(base_url=f"http://127.0.0.1:{cls.server.port}")
 
     @classmethod
     def tearDownClass(cls):
@@ -95,6 +95,39 @@ class TestMcpTools(unittest.TestCase):
         self.assertTrue(res["success"])
         self.assertEqual(res["data"]["handle"], "BEAM_101")
         self.assertEqual(res["data"]["section_name"], "HEA240")
+
+    def test_create_poly_beam(self):
+        pts = [[0.0, 0.0, 0.0], [1000.0, 0.0, 0.0], [2000.0, 1000.0, 0.0]]
+        res = modeling_tools.create_poly_beam(self.client, pts, "HEA200")
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["handle"], "PBEAM_601")
+        self.assertEqual(res["data"]["vertex_count"], 3)
+
+    def test_create_portal_frame(self):
+        res = modeling_tools.create_portal_frame(
+            self.client,
+            span_mm=12000.0,
+            eave_height_mm=6000.0,
+            ridge_height_mm=7500.0,
+            column_section="HEA 300",
+            rafter_section="IPE 300",
+        )
+        self.assertTrue(res["success"])
+        self.assertEqual(res["data"]["column_left_handle"], "COL_L_01")
+        self.assertEqual(res["data"]["rafter_right_handle"], "RAF_R_02")
+        self.assertEqual(len(res["data"]["base_plate_handles"]), 2)
+        self.assertEqual(res["data"]["geometry"]["span_mm"], 12000.0)
+
+    def test_apply_detailing_repairs(self):
+        res = diagnostic_tools.apply_detailing_repairs(
+            self.client,
+            repair_actions=["assign_orphaned_plates", "infer_missing_roles"],
+            dry_run=True,
+        )
+        self.assertTrue(res["success"])
+        self.assertTrue(res["data"]["dry_run"])
+        self.assertEqual(res["data"]["count"], 2)
+        self.assertEqual(len(res["data"]["repairs_applied"]), 2)
 
     def test_create_plate(self):
         points = [[0, 0, 0], [400, 0, 0], [400, 400, 0], [0, 400, 0]]
@@ -268,6 +301,9 @@ class TestDispatcherRouting(unittest.TestCase):
         "elements/validate-section": "QueryCommandHandler",
         # CONTRACT-007 production BOM route
         "production/bom": "BomCommandHandler",
+        # CONTRACT-008 generative portal frame and doctor
+        "elements/portal-frame": "PortalFrameCommandHandler",
+        "audit/repair": "DoctorCommandHandler",
     }
 
     COMMAND_ROUTES = {
@@ -329,6 +365,8 @@ class TestDispatcherRouting(unittest.TestCase):
             ("QueryCommandHandler.cs", "GetJointsCatalog"),
             ("QueryCommandHandler.cs", "ValidateSection"),
             ("BomCommandHandler.cs", "GenerateBom"),
+            ("PortalFrameCommandHandler.cs", "Create"),
+            ("DoctorCommandHandler.cs", "Repair"),
         ):
             path = PLUGIN_COMMANDS / "Handlers" / file_name
             self.assertTrue(path.is_file(), f"{file_name} is missing")
@@ -349,6 +387,8 @@ class TestDispatcherRouting(unittest.TestCase):
             "ProductionCommandHandler.cs",
             "QueryCommandHandler.cs",
             "BomCommandHandler.cs",
+            "PortalFrameCommandHandler.cs",
+            "DoctorCommandHandler.cs",
         ):
             source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")
             self.assertNotIn("LockDocument()", source, f"{file_name} opens its own document lock")

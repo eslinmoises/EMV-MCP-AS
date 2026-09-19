@@ -10,7 +10,7 @@ class TestExamples(unittest.TestCase):
     def setUpClass(cls):
         cls.server = MockAdvanceSteelServer(host="127.0.0.1", port=5055)
         cls.server.start()
-        cls.client = AdvanceSteelIpcClient(base_url="http://127.0.0.1:5055")
+        cls.client = AdvanceSteelIpcClient(base_url=f"http://127.0.0.1:{cls.server.port}")
 
     @classmethod
     def tearDownClass(cls):
