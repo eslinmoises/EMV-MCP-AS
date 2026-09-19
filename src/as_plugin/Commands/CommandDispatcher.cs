@@ -59,6 +59,16 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             BodyJson = bodyJson;
         }
 
+        /// <summary>Creates the command-mode context, which deliberately has no outer AutoCAD transaction.</summary>
+        public CommandContext(Document doc, string method, string path, string bodyJson)
+        {
+            Doc = doc;
+            AcadTransaction = null!;
+            Method = method;
+            Path = path;
+            BodyJson = bodyJson;
+        }
+
         public Document Doc { get; }
         public AcTransaction AcadTransaction { get; }
         public string Method { get; }
@@ -127,6 +137,25 @@ namespace EMV.AdvanceSteel.Plugin.Commands
                 && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
             {
                 return parsed;
+            }
+
+            return fallback;
+        }
+
+        public bool GetBool(string name, bool fallback)
+        {
+            if (Body.ValueKind == JsonValueKind.Object
+                && Body.TryGetProperty(name, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.True) return true;
+                if (prop.ValueKind == JsonValueKind.False) return false;
+            }
+
+            if (Query.TryGetValue(name, out var raw))
+            {
+                if (bool.TryParse(raw, out var parsed)) return parsed;
+                if (raw == "1") return true;
+                if (raw == "0") return false;
             }
 
             return fallback;
@@ -257,6 +286,27 @@ namespace EMV.AdvanceSteel.Plugin.Commands
                     "Check docs/specs/004-mcp-tools-specification.md for the supported tool surface.");
             }
 
+            // Command-mode engines create and commit their own transactions. Holding only the
+            // document lock avoids a nested-transaction deadlock (rules/transaction-safety.md section 5).
+            if (CommandRoutes.Contains(route))
+            {
+                using (var docLock = doc.LockDocument())
+                {
+                    try
+                    {
+                        var context = new CommandContext(doc, method, route, bodyJson) { Query = query };
+                        return Route(context);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        return CommandResult.Fail(
+                            "COMMAND_MODE_FAILED", ex.Message, 500,
+                            "The command-mode route left the model as the Advance Steel command wrote it.",
+                            ex.StackTrace);
+                    }
+                }
+            }
+
             // Atomic transaction pattern (rules/transaction-safety.md §3). The AutoCAD transaction
             // is the outer boundary; the Advance Steel transaction wraps the AS database inside it
             // so that a failure rolls back both and never leaves dangling entities.
@@ -318,6 +368,9 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "audit/clashes" => AuditCommandHandler.DetectClashes(ctx),
             "viewport/capture" => ViewportCommandHandler.Capture(ctx),
             "script/execute" => ScriptRoute(ctx),
+            "production/numbering" => ProductionCommandHandler.RunNumbering(ctx),
+            "production/export-nc" => ProductionCommandHandler.ExportNc(ctx),
+            "production/drawing-status" => ProductionCommandHandler.DrawingStatus(ctx),
             _ => CommandResult.Fail("ENDPOINT_NOT_FOUND", $"Unknown endpoint: {ctx.Path}", 404)
         };
 
@@ -349,7 +402,17 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "audit/assembly-integrity",
             "audit/clashes",
             "viewport/capture",
-            "script/execute"
+            "script/execute",
+            "production/numbering",
+            "production/export-nc",
+            "production/drawing-status"
+        };
+
+        private static readonly HashSet<string> CommandRoutes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "production/numbering",
+            "production/export-nc",
+            "production/drawing-status"
         };
 
         private static bool IsKnownRoute(string route) => KnownRoutes.Contains(route);

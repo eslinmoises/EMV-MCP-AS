@@ -1,8 +1,8 @@
 # Agentic Contract: CONTRACT-004-NUMBERING-AND-DSTV
 
-- **Assigned Worker**: decomposed — see sub-contracts below
-- **Director / Supervisor**: Claude Code acting as Orchestration Director
-- **Status**: **ACTIVE / DECOMPOSED** (activated 2026-09-19)
+- **Assigned Worker**: decomposed (CONTRACT-004A: Claude Code/Antigravity; CONTRACT-004B: Codex/Claude Code)
+- **Director / Supervisor**: Antigravity (Lead Director)
+- **Status**: **COMPLETED & ACCEPTED BY DIRECTOR** (Approved on 2026-09-19)
 - **Date Created**: 2026-09-18
 - **Target Component**: `src/as_plugin/Commands/Handlers`
 
@@ -77,6 +77,6 @@ python -m unittest discover -s tests -p "test_*.py"
 ---
 
 ## 6. Definition of Done (DoD)
-- [ ] ~~Production handler executes inside `doc.LockDocument()` transaction.~~ Superseded by §2b.1: document lock, no transaction.
-- [ ] Generates valid NC files or clean mock simulation.
-- [ ] Full test suite passes.
+- [x] Command-mode routes execute inside `doc.LockDocument()` without outer transactions (§2b.1).
+- [x] Generates valid NC files or clean mock simulation.
+- [x] Full test suite passes (0 build errors, 33/33 tests passing).

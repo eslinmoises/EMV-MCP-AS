@@ -54,6 +54,11 @@
       <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASGeometryMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASGeometryMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASGeometryMgd.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="ASMgd">
+      <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASMgd.dll</HintPath>
+      <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\ADVS\ASMgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASMgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\ADVS\ASMgd.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
 
 </Project>

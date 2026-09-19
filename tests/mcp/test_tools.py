@@ -185,6 +185,16 @@ class TestDispatcherRouting(unittest.TestCase):
         "elements/plate": "PlateCommandHandler",
         "audit/assembly-integrity": "AuditCommandHandler",
         "audit/clashes": "AuditCommandHandler",
+        # CONTRACT-004A command-mode production routes
+        "production/numbering": "ProductionCommandHandler",
+        "production/export-nc": "ProductionCommandHandler",
+        "production/drawing-status": "ProductionCommandHandler",
+    }
+
+    COMMAND_ROUTES = {
+        "production/numbering",
+        "production/export-nc",
+        "production/drawing-status",
     }
 
     @classmethod
@@ -195,6 +205,12 @@ class TestDispatcherRouting(unittest.TestCase):
         )
         assert known_block, "could not locate the KnownRoutes initializer"
         cls.known_routes = set(re.findall(r'"([^"]+)"', known_block.group(1)))
+
+        cmd_block = re.search(
+            r"CommandRoutes\s*=\s*new\((?:.|\n)*?\{((?:.|\n)*?)\};", cls.source
+        )
+        assert cmd_block, "could not locate the CommandRoutes initializer"
+        cls.command_routes = set(re.findall(r'"([^"]+)"', cmd_block.group(1)))
 
     def test_routes_are_gated_by_known_routes(self):
         for route in self.EXPECTED_ROUTES:
@@ -212,11 +228,22 @@ class TestDispatcherRouting(unittest.TestCase):
                 f"{route} is not dispatched to {handler}",
             )
 
+    def test_command_routes_are_registered_and_isolated(self):
+        for route in self.COMMAND_ROUTES:
+            self.assertIn(
+                route,
+                self.command_routes,
+                f"{route} must be registered in CommandRoutes for command-mode execution",
+            )
+
     def test_handlers_exist_with_their_entry_point(self):
         for file_name, entry_point in (
             ("JointCommandHandler.cs", "Create"),
             ("FeatureCommandHandler.cs", "Apply"),
             ("ModifyCommandHandler.cs", "Modify"),
+            ("ProductionCommandHandler.cs", "RunNumbering"),
+            ("ProductionCommandHandler.cs", "ExportNc"),
+            ("ProductionCommandHandler.cs", "DrawingStatus"),
         ):
             path = PLUGIN_COMMANDS / "Handlers" / file_name
             self.assertTrue(path.is_file(), f"{file_name} is missing")
@@ -227,12 +254,13 @@ class TestDispatcherRouting(unittest.TestCase):
             )
 
     def test_handlers_do_not_open_their_own_transaction(self):
-        """rules/transaction-safety.md §3: the dispatcher owns the single transaction boundary.
-
-        A handler that opens a nested DocumentLock or StartTransaction of its own can commit
-        a partial model change that the dispatcher then believes it rolled back.
-        """
-        for file_name in ("JointCommandHandler.cs", "FeatureCommandHandler.cs", "ModifyCommandHandler.cs"):
+        """rules/transaction-safety.md §3 & §5: handlers never open their own transaction boundary."""
+        for file_name in (
+            "JointCommandHandler.cs",
+            "FeatureCommandHandler.cs",
+            "ModifyCommandHandler.cs",
+            "ProductionCommandHandler.cs",
+        ):
             source = (PLUGIN_COMMANDS / "Handlers" / file_name).read_text(encoding="utf-8")
             self.assertNotIn("LockDocument()", source, f"{file_name} opens its own document lock")
             self.assertNotIn("StartTransaction(", source, f"{file_name} opens its own transaction")
