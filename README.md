@@ -15,19 +15,23 @@
 
 **EMV-MCP-AS** is an open-source ecosystem that connects modern Large Language Models (LLMs) to **Autodesk Advance Steel**. It brings **autonomous structural modeling** and **expert detailing diagnosis** to terminal and IDE-based AI agents.
 
-### Core Capabilities
-
-1. **Generative Shop Detailing from Blueprints**:
-   - Provide project drawings, structural calculations, and framing plans to Claude Code or Antigravity.
-   - The agent creates columns, beams, rafters, bracing, base plates, and standard connections directly inside Advance Steel.
-2. **Detailing Doctor & Troubleshooting Copilot**:
+### Core Capabilities & Objectives
+1. **Fabrication Workshop Detailing from Engineering Reports & Drawings**:
+   - Ingest detailed connection designs from **RAM Connection**, **IDEA StatiCa Connection**, **AutoCAD DXF**, or **PDF calculation reports** (such as ANSI/AISC 358-16 Bolted Flange Plate - BFP, End Plate, Shear Tab, Base Plates).
+   - Generates complete fabrication geometry: top/bottom flange plates, shear tabs, continuity stiffeners, web doublers, bolt patterns (A325/A490), and **workshop welds (`kInShop`)** in exact contact planes.
+   - Merges parts into unified structural assemblies (`MainPart`) with proper fabrication numbering marks, completely preventing orphaned plates or incorrect single-part drawings.
+2. **Generative Shop Detailing from Blueprints & Framing Plans**:
+   - Parametric one-shot generation of entire industrial lattice warehouses (Warren roof trusses, double-chord columns, lacing webbing, base plates) matching real-world models (`version1.dwg`).
+3. **3D Spatial Reference & BIM Synchronization**:
+   - Parametric structural grids (`Grid1D`) and elevation levels (`LevelObject`) for coordinate referencing, 2D general arrangement plans, and Autodesk Revit coordination.
+4. **Detailing Doctor & Troubleshooting Copilot**:
    - Inspect active selections, verify workshop vs. site welds, and detect disconnected parts.
    - Audit **Main Part** assignments to prevent misoriented workshop drawings and corrupt CNC/DSTV exports.
    - Run clash detection and clearance checks in real time.
-3. **Dynamic Scripting (C# Roslyn)**:
+5. **Dynamic Scripting (C# Roslyn)**:
    - Execute procedural and parametric C# code in-memory without compiling or restarting Advance Steel.
-4. **Multimodal Vision Feedback**:
-   - Capture live 3D viewport screenshots so multimodal agents (Claude 3.7 Sonnet, Gemini) can compare the 3D model against blueprints.
+6. **Multimodal Vision Feedback**:
+   - Capture live 3D viewport screenshots so multimodal agents (Claude 3.7 Sonnet, Gemini) can inspect the 3D model against blueprints.
 
 ---
 

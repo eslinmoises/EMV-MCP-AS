@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "emv-mcp-as": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.mcp_server.server"
+      ],
+      "cwd": "C:/Proyectos/EMV-MCP-AS",
+      "env": {
+        "PYTHONPATH": "C:/Proyectos/EMV-MCP-AS",
+        "AS_MCP_PORT": "5055"
+      }
+    }
+  }
+}

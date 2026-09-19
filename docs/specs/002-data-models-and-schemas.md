@@ -435,3 +435,230 @@ As extracted by assembly reflection:
 - **Assembly & Main Part**: Managed via `AtomicElement.IsMainPart` and connection graphs (`GetConnectedObjects(..., kInShop)`).
 - **Numbering (read back)**: `AtomicElement.GetSinglePartPositionNumber()`, `GetMainPartPositionNumber()`, `GetNumberingStatus()`.
 - **Numbering / NC engines**: not exposed as managed classes in AS 2026; driven through the Advance Steel command layer and verified afterwards through the properties above (see `rules/transaction-safety.md` §5).
+- **Grids**: `Autodesk.AdvanceSteel.Modelling.Grid1D(Matrix3d cs, double length, double width, int numAxes)`, `Grid.AddSequence(int numElements, double distance)`.
+- **Levels**: `Autodesk.AdvanceSteel.BuildingStructure.LevelObject.Create(BuildingStructureTreeObject parent, string name, double dfAbsHeight, LevelObject above, LevelObject below)`.
+
+---
+
+## 10. Spatial Grids and Building Levels Schemas
+
+### Structural Grid Creation Request (`POST /api/v1/spatial/grid`)
+```json
+{
+  "origin": [0.0, 0.0, 0.0],
+  "axis_direction": [0.0, 1.0, 0.0],
+  "spacing_direction": [1.0, 0.0, 0.0],
+  "line_length": 30000.0,
+  "count": 7,
+  "spacing": 5000.0,
+  "spacings": [5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0],
+  "labels": ["1", "2", "3", "4", "5", "6", "7"],
+  "label_prefix": "1",
+  "text_location": "Both"
+}
+```
+
+### Structural Grid Creation Response
+```json
+{
+  "grid_handle": "94E",
+  "grid_type": "k1DGrid",
+  "axis_count": 7,
+  "axes": [
+    { "name": "1", "start": [0.0, 0.0, 0.0], "end": [0.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "2", "start": [5000.0, 0.0, 0.0], "end": [5000.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "3", "start": [10000.0, 0.0, 0.0], "end": [10000.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "4", "start": [15000.0, 0.0, 0.0], "end": [15000.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "5", "start": [20000.0, 0.0, 0.0], "end": [20000.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "6", "start": [25000.0, 0.0, 0.0], "end": [25000.0, 30000.0, 0.0], "length": 30000.0 },
+    { "name": "7", "start": [30000.0, 0.0, 0.0], "end": [30000.0, 30000.0, 0.0], "length": 30000.0 }
+  ]
+}
+```
+
+### Building Level Creation Request (`POST /api/v1/spatial/level`)
+```json
+{
+  "name": "Nivel +6.00m (Alero)",
+  "elevation": 6000.0,
+  "level_below_handle": null,
+  "level_above_handle": null
+}
+```
+
+### Building Level Creation Response
+```json
+{
+  "handle": "955",
+  "name": "Nivel +6.00m (Alero)",
+  "elevation": 6000.0,
+  "tree_parent": "BuildingStructureTreeObject",
+  "registered": true
+}
+```
+
+---
+
+## 11. Parametric Trussed Warehouse Schemas (`version1.dwg`)
+
+### Trussed Warehouse Creation Request (`POST /api/v1/elements/trussed-warehouse`)
+```json
+{
+  "span": 31000.0,
+  "length": 30000.0,
+  "bay_spacing": 5000.0,
+  "eave_height": 6000.0,
+  "ridge_height": 9500.0,
+  "column_width": 1000.0,
+  "truss_depth": 2000.0,
+  "profile": "RHS_Sections_square_c nach DIN#@§@#Q90X3",
+  "material": "S235JR",
+  "create_grids_and_levels": true
+}
+```
+
+### Trussed Warehouse Creation Response
+```json
+{
+  "frames_count": 7,
+  "total_bars": 532,
+  "total_weight_kg": 25420.0,
+  "columns": {
+    "count": 14,
+    "handles": ["C1", "C2", "..."]
+  },
+  "rafters": {
+    "count": 14,
+    "handles": ["R1", "R2", "..."]
+  },
+  "struts_and_diagonals_count": 504,
+  "grids_created": {
+    "transverse_handle": "94E",
+    "longitudinal_handle": "94F"
+  },
+  "levels_created": [
+    { "name": "Nivel 0.00m (Cimentación)", "elevation": 0.0, "handle": "950" },
+    { "name": "Nivel +6.00m (Alero)", "elevation": 6000.0, "handle": "951" },
+    { "name": "Nivel +7.897m (Cumbrera Inferior)", "elevation": 7897.0, "handle": "952" },
+    { "name": "Nivel +9.50m (Cumbrera Superior)", "elevation": 9500.0, "handle": "953" }
+  ]
+}
+```
+
+---
+
+## 12. Engineered Connection Schemas (RAM Connection / IDEA StatiCa / PDF / DXF Spec)
+
+Enables AI agents to ingest connection calculation reports (RAM Connection, IDEA StatiCa), 2D DXF drawings, or PDF fabrication details, and generate complete workshop-ready connection geometry with exact shop welds and assembly bindings.
+
+### Engineered Connection Creation Request (`POST /api/v1/elements/engineered-joint`)
+```json
+{
+  "connection_name": "Moment End-Plate Connection (IDEA StatiCa CON-01)",
+  "source_system": "IDEA StatiCa",
+  "connected_members": [
+    { "handle": "1B2C", "role": "Column", "is_main_part": true },
+    { "handle": "2D3E", "role": "Beam", "is_main_part": false }
+  ],
+  "cuts_and_preparations": [
+    {
+      "member_handle": "2D3E",
+      "cut_type": "Shortening",
+      "offset_mm": 20.0
+    }
+  ],
+  "plates": [
+    {
+      "name": "Flush End Plate",
+      "thickness_mm": 20.0,
+      "material": "S275JR",
+      "model_role": "EndPlate",
+      "contour_points": [
+        [-150.0, -250.0, 0.0],
+        [150.0, -250.0, 0.0],
+        [150.0, 250.0, 0.0],
+        [-150.0, 250.0, 0.0]
+      ]
+    },
+    {
+      "name": "Column Web Stiffener Left",
+      "thickness_mm": 12.0,
+      "material": "S275JR",
+      "model_role": "Stiffener",
+      "contour_points": [
+        [-120.0, -100.0, 0.0],
+        [120.0, -100.0, 0.0],
+        [120.0, 100.0, 0.0],
+        [-120.0, 100.0, 0.0]
+      ]
+    }
+  ],
+  "bolt_groups": [
+    {
+      "bolt_standard": "EN 14399-4 (HV)",
+      "bolt_grade": "10.9",
+      "bolt_diameter_mm": 20.0,
+      "pattern_type": "Rectangular",
+      "nx": 2,
+      "ny": 4,
+      "dx": 100.0,
+      "dy": 90.0,
+      "origin": [0.0, 0.0, 0.0],
+      "normal": [1.0, 0.0, 0.0],
+      "is_site_bolt": true,
+      "connected_part_handles": ["1B2C", "ENDPLATE_01"]
+    }
+  ],
+  "shop_welds": [
+    {
+      "weld_type": "Fillet",
+      "throat_thickness_mm": 6.0,
+      "location": "Workshop",
+      "main_part_handle": "2D3E",
+      "attached_part_name": "Flush End Plate"
+    },
+    {
+      "weld_type": "Fillet",
+      "throat_thickness_mm": 5.0,
+      "location": "Workshop",
+      "main_part_handle": "1B2C",
+      "attached_part_name": "Column Web Stiffener Left"
+    }
+  ],
+  "verify_assembly": true
+}
+```
+
+### Engineered Connection Creation Response
+```json
+{
+  "connection_id": "CONN_IDEA_01",
+  "name": "Moment End-Plate Connection (IDEA StatiCa CON-01)",
+  "plates_created": [
+    { "name": "Flush End Plate", "handle": "PL_101", "weight_kg": 23.5 },
+    { "name": "Column Web Stiffener Left", "handle": "PL_102", "weight_kg": 4.8 }
+  ],
+  "bolt_groups_created": [
+    { "handle": "BOLT_201", "count": 8, "is_site_bolt": true }
+  ],
+  "welds_created": [
+    { "handle": "WELD_301", "location": "Workshop", "throat_thickness": 6.0, "assembly_bound": true },
+    { "handle": "WELD_302", "location": "Workshop", "throat_thickness": 5.0, "assembly_bound": true }
+  ],
+  "assembly_verification": {
+    "column_assembly": {
+      "main_part_handle": "1B2C",
+      "attached_part_handles": ["PL_102"],
+      "verified": true
+    },
+    "beam_assembly": {
+      "main_part_handle": "2D3E",
+      "attached_part_handles": ["PL_101"],
+      "verified": true
+    }
+  },
+  "success": true
+}
+```
+
+

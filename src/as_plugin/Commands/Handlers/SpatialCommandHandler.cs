@@ -61,6 +61,177 @@ namespace EMV.AdvanceSteel.Plugin.Commands.Handlers
         }
 
         /// <summary>
+        /// POST /api/v1/spatial/grid — SPEC-004 §8 create_structural_grid.
+        /// Creates 1D or multi-axis grid lines in Advance Steel.
+        /// </summary>
+        public static CommandResult CreateGrid(CommandContext ctx)
+        {
+            var origin = ctx.GetPoint3d("origin", AsPoint3d.kOrigin);
+            var axisDir = ctx.GetVector3d("axis_direction", Autodesk.AdvanceSteel.Geometry.Vector3d.kYAxis);
+            var spacingDir = ctx.GetVector3d("spacing_direction", Autodesk.AdvanceSteel.Geometry.Vector3d.kXAxis);
+            var lineLength = ctx.GetDouble("line_length", 30000.0);
+            var count = ctx.GetInt("count", 2);
+            var spacing = ctx.GetDouble("spacing", 5000.0);
+            var labelPrefix = ctx.GetString("label_prefix", "1");
+            var labels = ctx.GetStringList("labels");
+            var spacings = ctx.GetDoubleList("spacings");
+            var textLocationStr = ctx.GetString("text_location", "Both");
+
+            if (lineLength <= 0)
+            {
+                return CommandResult.Fail("INVALID_PARAMETER", "line_length must be greater than 0.", 400);
+            }
+
+            int numAxes = count;
+            double totalWidth = 0.0;
+
+            if (spacings.Count > 0)
+            {
+                numAxes = spacings.Count + 1;
+                foreach (var s in spacings) totalWidth += s;
+            }
+            else
+            {
+                if (numAxes < 1) numAxes = 1;
+                totalWidth = numAxes > 1 ? (numAxes - 1) * spacing : 0.0;
+            }
+
+            try
+            {
+                var normSpacing = new Autodesk.AdvanceSteel.Geometry.Vector3d(spacingDir);
+                normSpacing.Normalize();
+                var normAxis = new Autodesk.AdvanceSteel.Geometry.Vector3d(axisDir);
+                normAxis.Normalize();
+                var normZ = normSpacing.CrossProduct(normAxis);
+                normZ.Normalize();
+
+                var cs = new Autodesk.AdvanceSteel.Geometry.Matrix3d();
+                cs.SetCoordSystem(origin, normSpacing, normAxis, normZ);
+
+                var grid = new Grid1D(cs, lineLength, totalWidth, numAxes);
+
+                if (labels.Count > 0)
+                {
+                    grid.setNumberingValues(labels);
+                }
+                else if (!string.IsNullOrWhiteSpace(labelPrefix))
+                {
+                    grid.NumberingPrefix = labelPrefix;
+                }
+
+                if (string.Equals(textLocationStr, "Start", StringComparison.OrdinalIgnoreCase))
+                {
+                    grid.setTextLocation(eGridLocation.kStart);
+                }
+                else if (string.Equals(textLocationStr, "End", StringComparison.OrdinalIgnoreCase))
+                {
+                    grid.setTextLocation(eGridLocation.kEnd);
+                }
+                else
+                {
+                    grid.setTextLocation(eGridLocation.kBoth);
+                }
+
+                grid.WriteToDb();
+
+                var gridHandle = grid.Handle;
+                var axesReport = new List<object>();
+
+                if (grid.GetAllElements(out var elements) > 0 && elements != null)
+                {
+                    foreach (var elem in elements)
+                    {
+                        var axisDesc = DescribeAxis(elem, cs, gridHandle, "k1DGrid");
+                        if (axisDesc != null) axesReport.Add(axisDesc);
+                    }
+                }
+
+                return CommandResult.Ok(new
+                {
+                    grid_handle = gridHandle,
+                    grid_type = "k1DGrid",
+                    axis_count = axesReport.Count > 0 ? axesReport.Count : numAxes,
+                    axes = axesReport
+                });
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail(
+                    "GRID_CREATION_FAILED",
+                    ex.Message,
+                    500,
+                    "Failed to create structural grid in Advance Steel.",
+                    ex.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// POST /api/v1/spatial/level — SPEC-004 §8 create_structural_level.
+        /// Creates a building structure level (LevelObject) registered in BuildingStructureManager.
+        /// </summary>
+        public static CommandResult CreateLevel(CommandContext ctx)
+        {
+            var name = ctx.GetString("name");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return CommandResult.Fail("MISSING_PARAMETER", "Parameter 'name' is required for the level.", 400);
+            }
+
+            var elevation = ctx.GetDouble("elevation", 0.0);
+            var belowHandle = ctx.GetString("level_below_handle");
+            var aboveHandle = ctx.GetString("level_above_handle");
+
+            try
+            {
+                var mgr = BuildingStructureManager.getBuildingStructureManager();
+                if (mgr == null)
+                {
+                    return CommandResult.Fail("BUILDING_STRUCTURE_UNAVAILABLE", "BuildingStructureManager could not be acquired.", 500);
+                }
+
+                var bso = mgr.CurrentBSO;
+                var tree = bso?.LevelTreeObject;
+                if (tree == null)
+                {
+                    return CommandResult.Fail("LEVEL_TREE_UNAVAILABLE", "LevelTreeObject could not be resolved from CurrentBSO.", 500);
+                }
+
+                LevelObject? levelBelow = null;
+                LevelObject? levelAbove = null;
+
+                if (!string.IsNullOrWhiteSpace(belowHandle))
+                {
+                    levelBelow = AsQuery.OpenByHandle(belowHandle!) as LevelObject;
+                }
+                if (!string.IsNullOrWhiteSpace(aboveHandle))
+                {
+                    levelAbove = AsQuery.OpenByHandle(aboveHandle!) as LevelObject;
+                }
+
+                var level = LevelObject.Create(tree, name!, elevation, levelAbove, levelBelow);
+                level.WriteToDb();
+
+                return CommandResult.Ok(new
+                {
+                    handle = level.Handle,
+                    name = name!,
+                    elevation = Math.Round(elevation, 3),
+                    tree_parent = "BuildingStructureTreeObject",
+                    registered = true
+                });
+            }
+            catch (Exception ex)
+            {
+                return CommandResult.Fail(
+                    "LEVEL_CREATION_FAILED",
+                    ex.Message,
+                    500,
+                    "Failed to create building level in Advance Steel.",
+                    ex.StackTrace);
+            }
+        }
+
+        /// <summary>
         /// GET /api/v1/spatial/box — SPEC-004 §1 query_elements_in_box.
         /// Returns all elements whose 3D bounding extents intersect [min_point, max_point].
         /// </summary>

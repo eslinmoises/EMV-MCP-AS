@@ -276,3 +276,111 @@ generated from an unnumbered part cannot be traced back to a mark on the shop fl
   - `elements_scanned` (`int`)
 - **Errors**: `INVALID_PARAMETER` (400), `NO_ELEMENTS_FOUND` (404).
 
+---
+
+## 7. Generative Macros and Detailing Doctor
+
+### `create_portal_frame`
+- **Endpoint**: `POST /api/v1/elements/portal-frame`
+- **Description**: Generates a complete industrial portal frame (two vertical columns, two sloping rafters, column base plates, anchor bolt patterns, and apex connection) in a single atomic transaction.
+- **Parameters**:
+  - `span_mm` (`float`, default 20000.0): Distance between column centerlines.
+  - `eave_height_mm` (`float`, default 6000.0): Height from foundation to rafter connection at eaves.
+  - `ridge_height_mm` (`float`, default 8000.0): Height from foundation to apex ridge.
+  - `y_offset_mm` (`float`, default 0.0): Position along the longitudinal Y axis.
+  - `column_section` (`str`, default `"HEB300"`): Valid Advance Steel column profile key.
+  - `rafter_section` (`str`, default `"IPE360"`): Valid Advance Steel rafter profile key.
+  - `material` (`str`, default `"S275JR"`): Steel grade.
+  - `base_plate_thickness_mm` (`float`, default 25.0): Base plate thickness.
+  - `base_plate_dimensions_mm` (`list[float]`, default `[400.0, 400.0]`): Base plate width and length `[dx, dy]`.
+  - `anchor_bolt_diameter_mm` (`float`, default 24.0): Anchor bolt diameter.
+  - `anchor_bolt_count` (`int`, default 4): Number of anchor bolts per column base.
+  - `anchor_bolt_spacing_mm` (`float`, default 250.0): Distance between anchor bolts.
+- **Returns**: `PortalFrameReport` with created handles (`left_column`, `right_column`, `left_rafter`, `right_rafter`, `base_plates`, `bolt_patterns`).
+- **Errors**: `INVALID_PARAMETER` (400), `SECTION_RESOLUTION_FAILED` (404).
+
+### `apply_detailing_repairs`
+- **Endpoint**: `POST /api/v1/audit/repair`
+- **Description**: Automates Detailing Doctor corrections across the active model or specified element handles: assigns missing model roles based on geometric aspect ratios, designates main parts on unassigned assemblies, and flags unanchored base plates.
+- **Parameters**:
+  - `element_handles` (`list[str]`, optional): Restricts scope to specific elements. Omitted ⇒ entire active model.
+  - `fix_roles` (`bool`, default true): Assign standard roles (`Column`, `Beam`, `Rafter`, `Bracing`, `BasePlate`) where unset.
+  - `fix_main_parts` (`bool`, default true): Designate the heaviest or longest member as the assembly main part.
+  - `auto_anchor_baseplates` (`bool`, default true): Automatically create missing anchor bolt patterns on unanchored base plates.
+- **Returns**: `RepairReport` with `repairs_applied`, `roles_updated`, `main_parts_assigned`, `orphans_resolved`.
+- **Errors**: `AUDIT_FAILED` (500).
+
+---
+
+## 8. Spatial Grids and Building Levels
+
+### `create_structural_grid`
+- **Endpoint**: `POST /api/v1/spatial/grid`
+- **Description**: Creates 3D structural grids (`Grid1D` / `Grid`) in Autodesk Advance Steel for spatial reference, BIM coordination with Autodesk Revit, and automated 2D fabrication drawing referencing.
+- **Parameters**:
+  - `origin` (`list[float]`, default `[0.0, 0.0, 0.0]`): 3D insertion point in WCS.
+  - `axis_direction` (`list[float]`, default `[0.0, 1.0, 0.0]`): Vector defining the axis line orientation.
+  - `spacing_direction` (`list[float]`, default `[1.0, 0.0, 0.0]`): Vector defining the direction of sequence repetition.
+  - `line_length` (`float`, default 30000.0): Length of each individual grid axis line in mm.
+  - `count` (`int`, optional, default 2): Number of parallel grid lines in the sequence.
+  - `spacing` (`float`, optional, default 5000.0): Uniform distance between adjacent grid lines.
+  - `spacings` (`list[float]`, optional): Non-uniform distances between adjacent axes (overrides `spacing` if provided).
+  - `labels` (`list[str]`, optional): Explicit names/bubbles for each axis (e.g. `["1", "2", "3"]` or `["A", "B", "C"]`).
+  - `label_prefix` (`str`, optional, default `"1"`): Fallback prefix for auto-numbering.
+  - `text_location` (`str`, default `"Both"`): Axis bubble location: `"Start"`, `"End"`, or `"Both"`.
+- **Returns**: `GridReport` containing `grid_handle`, `grid_type`, `axis_count`, and array of `axes` (`name`, `start`, `end`, `length`).
+- **Errors**: `INVALID_PARAMETER` (400), `GRID_CREATION_FAILED` (500).
+
+### `create_structural_level`
+- **Endpoint**: `POST /api/v1/spatial/level`
+- **Description**: Creates a building structure level (`LevelObject`) registered in the Advance Steel `BuildingStructureManager` tree, enabling multi-storey alignment, level-constrained modeling, and Revit storey synchronization.
+- **Parameters**:
+  - `name` (`str`): Human-readable level designation (e.g. `"Nivel +0.00m (Cimentación)"`, `"Nivel +6.00m (Alero)"`).
+  - `elevation` (`float`): Absolute height in mm along the global Z axis.
+  - `level_below_handle` (`str`, optional): Handle of existing lower level object.
+  - `level_above_handle` (`str`, optional): Handle of existing upper level object.
+- **Returns**: `LevelReport` containing `handle`, `name`, `elevation`, `tree_parent`, and `registered`.
+- **Errors**: `INVALID_PARAMETER` (400), `LEVEL_CREATION_FAILED` (500).
+
+---
+
+## 9. Parametric Trussed Warehouse Macro
+
+### `create_trussed_warehouse`
+- **Endpoint**: `POST /api/v1/elements/trussed-warehouse`
+- **Description**: Generates a complete industrial warehouse parameterized from real-world fabrication geometry (`version1.dwg`), including double-chord lattice columns, Warren roof trusses, all chords, struts, diagonals, base plates, anchor bolts, and optional matching spatial grids and levels.
+- **Parameters**:
+  - `span` (`float`, default 31000.0): Transverse width between column centers in mm.
+  - `length` (`float`, default 30000.0): Longitudinal length of the building in mm.
+  - `bay_spacing` (`float`, default 5000.0): Distance between portal frames along the longitudinal axis.
+  - `eave_height` (`float`, default 6000.0): Height from foundation to lower rafter chord at eave in mm.
+  - `ridge_height` (`float`, default 9500.0): Height from foundation to ridge apex in mm.
+  - `column_width` (`float`, default 1000.0): Width of the double-chord lattice column in mm.
+  - `truss_depth` (`float`, default 2000.0): Vertical depth of the roof truss in mm.
+  - `profile` (`str`, default `"RHS_Sections_square_c nach DIN#@§@#Q90X3"`): Advance Steel profile key for chords, columns, and webbing.
+  - `material` (`str`, default `"S235JR"`): Steel material grade.
+  - `create_grids_and_levels` (`bool`, default true): Whether to automatically generate corresponding orthogonal grids and elevations.
+- **Returns**: `TrussedWarehouseReport` containing `frames_count`, `total_bars`, `total_weight_kg`, `columns`, `rafters`, `struts_and_diagonals_count`, `grids_created`, and `levels_created`.
+- **Errors**: `INVALID_PARAMETER` (400), `SECTION_RESOLUTION_FAILED` (404), `CREATION_FAILED` (500).
+
+---
+
+## 10. Engineering Connections from Calculation Reports & Plans (RAM Connection / IDEA StatiCa / CAD / PDF)
+
+### `model_engineered_connection`
+- **Endpoint**: `POST /api/v1/elements/engineered-joint`
+- **Description**: Models a high-fidelity workshop connection exactly as engineered in calculation software (e.g. RAM Connection, IDEA StatiCa Connection), 2D DXF drawings, or PDF fabrication sheets. Generates all member cuts/shortenings, end plates, base plates, shear tabs, web/flange stiffeners, gusset plates, bolt patterns, and critically, **workshop welds (`kInShop`)** that bind plates to their corresponding main parts so Advance Steel generates correct assembly marks and fabrication part lists without manual post-processing.
+- **Parameters**:
+  - `connection_name` (`str`): Human-readable joint tag (e.g. `"Moment End-Plate CON-01"`).
+  - `source_system` (`str`, optional): Origin of design calculation (`"IDEA StatiCa"`, `"RAM Connection"`, `"DXF"`, `"PDF Specification"`).
+  - `connected_members` (`list[dict]`): Primary and secondary members involved, specifying `handle`, `role`, and `is_main_part`.
+  - `cuts_and_preparations` (`list[dict]`, optional): Beam edge cuts, copes, shortenings, or bevels.
+  - `plates` (`list[dict]`): Plates to create (`name`, `thickness_mm`, `material`, `model_role`, `contour_points`).
+  - `bolt_groups` (`list[dict]`, optional): Bolt arrays (`bolt_standard`, `bolt_grade`, `bolt_diameter_mm`, `pattern_type`, `nx`, `ny`, `dx`, `dy`, `origin`, `normal`, `is_site_bolt`, `connected_part_handles`).
+  - `shop_welds` (`list[dict]`, optional): Workshop weld details (`weld_type`, `throat_thickness_mm`, `location="Workshop"`, `main_part_handle`, `attached_part_name`).
+  - `verify_assembly` (`bool`, default true): Automatically verify that workshop welds correctly bind each plate into the designated assembly and that main parts are properly assigned.
+- **Returns**: `EngineeredConnectionReport` containing `connection_id`, `plates_created`, `bolt_groups_created`, `welds_created`, `assembly_verification`, and `success`.
+- **Errors**: `INVALID_PARAMETER` (400), `ELEMENT_NOT_FOUND` (404), `WELD_CREATION_FAILED` (500), `ASSEMBLY_BINDING_FAILED` (422).
+
+
+

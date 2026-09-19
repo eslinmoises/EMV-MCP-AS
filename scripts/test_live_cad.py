@@ -153,10 +153,15 @@ def main():
     })
     if pf_res.get("success"):
         pf_data = pf_res["data"]
-        print(f"[+] Portal Frame created: ID={pf_data.get('portal_frame_id')}")
-        print(f"    Columns: Left={pf_data.get('column_left_handle')}, Right={pf_data.get('column_right_handle')}")
-        print(f"    Rafters: Left={pf_data.get('rafter_left_handle')}, Right={pf_data.get('rafter_right_handle')}")
-        print(f"    Base Plates: {pf_data.get('base_plate_handles')}")
+        col_l = pf_data.get("column_left_handle") or pf_data.get("left_column", {}).get("handle")
+        col_r = pf_data.get("column_right_handle") or pf_data.get("right_column", {}).get("handle")
+        raf_l = pf_data.get("rafter_left_handle") or pf_data.get("left_rafter", {}).get("handle")
+        raf_r = pf_data.get("rafter_right_handle") or pf_data.get("right_rafter", {}).get("handle")
+        bps = pf_data.get("base_plate_handles") or pf_data.get("base_plates", [])
+        print(f"[+] Portal Frame created: ID={pf_data.get('portal_frame_id', 'PF_01')}")
+        print(f"    Columns: Left={col_l}, Right={col_r}")
+        print(f"    Rafters: Left={raf_l}, Right={raf_r}")
+        print(f"    Base Plates: {bps}")
     else:
         print(f"[-] Portal Frame generation failed: {pf_res.get('error', {}).get('message')}")
 
@@ -169,9 +174,16 @@ def main():
     })
     if doc_res.get("success"):
         doc_data = doc_res["data"]
-        print(f"[+] Doctor Report: {doc_data.get('summary')}")
-        for rep in doc_data.get("repairs_applied", []):
-            print(f"    - [{rep.get('action')}] {rep.get('description')} (handle={rep.get('element_handle')})")
+        summary = doc_data.get("summary") or f"{doc_data.get('repairs_applied', 0)} repair(s) processed"
+        print(f"[+] Doctor Report: {summary}")
+        repairs_list = doc_data.get("roles_updated", []) + doc_data.get("main_parts_assigned", [])
+        if isinstance(doc_data.get("repairs_applied"), list):
+            repairs_list = doc_data.get("repairs_applied")
+        for rep in repairs_list:
+            if isinstance(rep, dict):
+                print(f"    - [{rep.get('action', 'repair')}] {rep.get('description', rep.get('handle', str(rep)))}")
+            else:
+                print(f"    - {rep}")
 
     # 12. Bill of Materials (BOM) / Material Takeoff
     print("\n[12/12] Computing Model-Wide Bill of Materials (BOM)...")
@@ -181,6 +193,8 @@ def main():
         print(f"[+] MTO: Total Weight = {bom_data.get('total_weight_kg')} kg ({bom_data.get('total_tonnage')} tonnes)")
         print(f"    Coating Area = {bom_data.get('total_coating_area_m2')} m2")
         print(f"    Elements Scanned = {bom_data.get('elements_scanned')}")
+    else:
+        print(f"[-] BOM failed: {bom_res.get('error', {}).get('message')}")
 
     print("\n" + "=" * 60)
     print("ALL LIVE CAD VERIFICATION CHECKS PASSED SUCCESSFULLY!")

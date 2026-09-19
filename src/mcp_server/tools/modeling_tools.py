@@ -208,3 +208,103 @@ def create_portal_frame(
     return client.post("elements/portal-frame", payload)
 
 
+def create_structural_grid(
+    client: AdvanceSteelIpcClient,
+    origin: Optional[List[float]] = None,
+    axis_direction: Optional[List[float]] = None,
+    spacing_direction: Optional[List[float]] = None,
+    line_length: float = 30000.0,
+    count: int = 2,
+    spacing: float = 5000.0,
+    spacings: Optional[List[float]] = None,
+    labels: Optional[List[str]] = None,
+    label_prefix: str = "1",
+    text_location: str = "Both",
+) -> Dict[str, Any]:
+    """Create 3D structural grids (Grid1D/Grid) for spatial reference and Revit BIM coordination."""
+    payload: Dict[str, Any] = {
+        "origin": origin or [0.0, 0.0, 0.0],
+        "axis_direction": axis_direction or [0.0, 1.0, 0.0],
+        "spacing_direction": spacing_direction or [1.0, 0.0, 0.0],
+        "line_length": line_length,
+        "count": count,
+        "spacing": spacing,
+        "label_prefix": label_prefix,
+        "text_location": text_location,
+    }
+    if spacings is not None:
+        payload["spacings"] = spacings
+    if labels is not None:
+        payload["labels"] = labels
+    return client.post("spatial/grid", payload)
+
+
+def create_structural_level(
+    client: AdvanceSteelIpcClient,
+    name: str,
+    elevation: float = 0.0,
+    level_below_handle: Optional[str] = None,
+    level_above_handle: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Create a building structure level (LevelObject) registered in Advance Steel."""
+    payload: Dict[str, Any] = {
+        "name": name,
+        "elevation": elevation,
+    }
+    if level_below_handle is not None:
+        payload["level_below_handle"] = level_below_handle
+    if level_above_handle is not None:
+        payload["level_above_handle"] = level_above_handle
+    return client.post("spatial/level", payload)
+
+
+def create_trussed_warehouse(
+    client: AdvanceSteelIpcClient,
+    span: float = 31000.0,
+    length: float = 30000.0,
+    bay_spacing: float = 5000.0,
+    eave_height: float = 6000.0,
+    ridge_height: float = 9500.0,
+    column_width: float = 1000.0,
+    truss_depth: float = 2000.0,
+    profile: str = "RHS_Sections_square_c nach DIN#@§@#Q90X3",
+    material: str = "S235JR",
+    create_grids_and_levels: bool = True,
+) -> Dict[str, Any]:
+    """Generate a complete parametric industrial lattice warehouse (7 frames, double columns, Warren trusses)."""
+    payload: Dict[str, Any] = {
+        "span": span,
+        "length": length,
+        "bay_spacing": bay_spacing,
+        "eave_height": eave_height,
+        "ridge_height": ridge_height,
+        "column_width": column_width,
+        "truss_depth": truss_depth,
+        "profile": profile,
+        "material": material,
+        "create_grids_and_levels": create_grids_and_levels,
+    }
+    return client.post("elements/trussed-warehouse", payload)
+def model_engineered_connection(
+    client: AdvanceSteelIpcClient,
+    connection_name: str = "Engineered Connection",
+    source_system: str = "Calculation Report",
+    plates: Optional[List[Dict[str, Any]]] = None,
+    bolt_groups: Optional[List[Dict[str, Any]]] = None,
+    shop_welds: Optional[List[Dict[str, Any]]] = None,
+    verify_assembly: bool = True,
+) -> Dict[str, Any]:
+    """Model complete fabrication connection assemblies from engineering reports (RAM Connection, IDEA StatiCa, DXF, AISC 358 BFP PDF).
+    
+    Creates plates, bolt patterns, and critical workshop welds (kInShop) ensuring no orphan parts and valid assembly hierarchy.
+    """
+    payload: Dict[str, Any] = {
+        "connection_name": connection_name,
+        "source_system": source_system,
+        "plates": plates or [],
+        "bolt_groups": bolt_groups or [],
+        "shop_welds": shop_welds or [],
+        "verify_assembly": verify_assembly,
+    }
+    return client.post("elements/engineered-joint", payload)
+

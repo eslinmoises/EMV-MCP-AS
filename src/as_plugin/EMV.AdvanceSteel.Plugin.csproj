@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- CONTRACT-011: the AutoCAD ribbon (AdWindows.dll) is a WPF control tree. -->
+    <UseWPF>true</UseWPF>
     <AssemblyName>EMV.AdvanceSteel.Plugin</AssemblyName>
     <RootNamespace>EMV.AdvanceSteel.Plugin</RootNamespace>
     <Version>1.0.0</Version>
@@ -33,6 +35,11 @@
     <Reference Include="acmgd">
       <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\acmgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\acmgd.dll</HintPath>
       <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\acmgd.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\acmgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\acmgd.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="AdWindows">
+      <HintPath Condition="Exists('C:\Program Files\Autodesk\AutoCAD 2026\AdWindows.dll')">C:\Program Files\Autodesk\AutoCAD 2026\AdWindows.dll</HintPath>
+      <HintPath Condition="!Exists('C:\Program Files\Autodesk\AutoCAD 2026\AdWindows.dll') and Exists('C:\Program Files\Autodesk\AutoCAD 2025\AdWindows.dll')">C:\Program Files\Autodesk\AutoCAD 2025\AdWindows.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ASObjectsMgd">

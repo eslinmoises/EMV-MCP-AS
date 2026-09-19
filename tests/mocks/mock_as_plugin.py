@@ -491,6 +491,111 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     "summary": f"{len(repairs)} detailing issues identified and {'previewed' if dry_run else 'repaired'}.",
                 }
             )
+        elif path == "/api/v1/spatial/grid":
+            line_len = float(body_json.get("line_length", 30000.0))
+            count = int(body_json.get("count", 2))
+            spacing = float(body_json.get("spacing", 5000.0))
+            spacings = body_json.get("spacings")
+            if spacings:
+                count = len(spacings) + 1
+            labels = body_json.get("labels") or [str(i + 1) for i in range(count)]
+            axes = [
+                {
+                    "name": labels[i] if i < len(labels) else str(i + 1),
+                    "start": [i * spacing, 0.0, 0.0],
+                    "end": [i * spacing, line_len, 0.0],
+                    "length": line_len,
+                    "grid_handle": "GRID_94E",
+                    "grid_type": "k1DGrid",
+                }
+                for i in range(count)
+            ]
+            self._send_envelope(
+                data={
+                    "grid_handle": "GRID_94E",
+                    "grid_type": "k1DGrid",
+                    "axis_count": len(axes),
+                    "axes": axes,
+                }
+            )
+        elif path == "/api/v1/spatial/level":
+            name = body_json.get("name", "Nivel +0.00m")
+            elev = float(body_json.get("elevation", 0.0))
+            self._send_envelope(
+                data={
+                    "handle": "LVL_955",
+                    "name": name,
+                    "elevation": elev,
+                    "tree_parent": "BuildingStructureTreeObject",
+                    "registered": True,
+                }
+            )
+        elif path == "/api/v1/elements/trussed-warehouse":
+            span = float(body_json.get("span", 31000.0))
+            length = float(body_json.get("length", 30000.0))
+            bay_spacing = float(body_json.get("bay_spacing", 5000.0))
+            frames_count = int(length / bay_spacing) + 1
+            self._send_envelope(
+                data={
+                    "frames_count": frames_count,
+                    "total_bars": 532,
+                    "total_weight_kg": 25420.0,
+                    "columns": {
+                        "count": frames_count * 2,
+                        "handles": [f"COL_{i}" for i in range(frames_count * 2)],
+                    },
+                    "rafters": {
+                        "count": frames_count * 2,
+                        "handles": [f"RAF_{i}" for i in range(frames_count * 2)],
+                    },
+                    "base_plates": {
+                        "count": frames_count * 4,
+                        "handles": [f"BP_{i}" for i in range(frames_count * 4)],
+                    },
+                    "all_bars_count": 532,
+                    "grids_created": {
+                        "transverse_handle": "GRID_94E",
+                        "longitudinal_handle": "GRID_94F",
+                        "axes_count": frames_count + 2,
+                    },
+                    "levels_created": [
+                        {"name": "Nivel 0.00m (Cimentación)", "elevation": 0.0, "handle": "LVL_0"},
+                        {"name": "Nivel +6.00m (Alero)", "elevation": 6000.0, "handle": "LVL_1"},
+                        {"name": "Nivel +9.50m (Cumbrera)", "elevation": 9500.0, "handle": "LVL_2"},
+                    ],
+                }
+            )
+        elif path == "/api/v1/elements/engineered-joint":
+            conn_name = body_json.get("connection_name", "Engineered Connection")
+            source_sys = body_json.get("source_system", "Calculation Report")
+            plates = body_json.get("plates", [])
+            bolts = body_json.get("bolt_groups", [])
+            welds = body_json.get("shop_welds", [])
+            self._send_envelope(
+                data={
+                    "connection_name": conn_name,
+                    "source_system": source_sys,
+                    "plates_created": [
+                        {"name": p.get("name", "Plate"), "handle": f"PL_{i}", "thickness_mm": p.get("thickness_mm", 20.0)}
+                        for i, p in enumerate(plates)
+                    ],
+                    "bolt_groups_created": [
+                        {"handle": f"BLT_{i}", "count": b.get("nx", 2) * b.get("ny", 2), "diameter_mm": b.get("bolt_diameter_mm", 20.0)}
+                        for i, b in enumerate(bolts)
+                    ],
+                    "welds_created": [
+                        {
+                            "handle": f"WLD_{i}",
+                            "location": "Workshop",
+                            "throat_thickness_mm": w.get("throat_thickness_mm", 6.0),
+                            "assembly_bound": True,
+                        }
+                        for i, w in enumerate(welds)
+                    ],
+                    "verified": True,
+                    "success": True,
+                }
+            )
         else:
             self._send_envelope(
                 error={"code": "ENDPOINT_NOT_FOUND", "message": f"Unknown endpoint: {path}"},

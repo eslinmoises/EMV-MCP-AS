@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "emv-advance-steel": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.mcp_server.server"
+      ],
+      "cwd": "C:\\Proyectos\\EMV-MCP-AS",
+      "env": {
+        "PYTHONPATH": "C:\\Proyectos\\EMV-MCP-AS",
+        "EMV_AS_API_BASE_URL": "http://127.0.0.1:5055/api/v1"
+      }
+    }
+  }
+}

@@ -227,24 +227,47 @@ namespace EMV.AdvanceSteel.Plugin.Commands.Handlers
         private static List<AtomicElement> ConnectedElements(WeldPattern weld)
         {
             var parts = new List<AtomicElement>();
+            if (weld == null) return parts;
 
             try
             {
-                var connection = weld.GetConnection();
-                if (connection == null) return parts;
+                var weldHandle = AsQuery.Safe(() => weld.Handle, null);
+                if (string.IsNullOrWhiteSpace(weldHandle)) return parts;
 
-                connection.getConnectedElements(out var elements, 0);
-
-                foreach (var element in elements ?? Array.Empty<FilerObject>())
+                foreach (var id in AsQuery.ModelObjectIds(eObjectType.kAtomicElem))
                 {
-                    // The weld is itself a connection means; report only the parts it joins.
-                    if (element is WeldPattern) continue;
-                    if (element is AtomicElement atomic) parts.Add(atomic);
+                    if (AsQuery.Open(id) is AtomicElement atomic)
+                    {
+                        if (atomic is WeldPattern || atomic is BoltPattern) continue;
+
+                        IEnumerable<Autodesk.AdvanceSteel.CADLink.Database.ObjectId>? connIds;
+                        try
+                        {
+                            atomic.GetConnectedObjects(out connIds, eAssemblyLocation.kUnknown);
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+
+                        if (connIds == null) continue;
+
+                        foreach (var cId in connIds)
+                        {
+                            var connectedObj = AsQuery.Open(cId);
+                            if (connectedObj is WeldPattern wp &&
+                                string.Equals(AsQuery.Safe(() => wp.Handle, null), weldHandle, StringComparison.OrdinalIgnoreCase))
+                            {
+                                parts.Add(atomic);
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-            catch (System.Exception)
+            catch
             {
-                // A weld whose connection cannot be read is still reported, just without parts.
+                // Fallback gracefully without throwing
             }
 
             return parts;

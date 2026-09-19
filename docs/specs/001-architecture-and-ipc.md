@@ -6,7 +6,23 @@
 
 ---
 
-## 1. Physical Architecture
+## 0. Project Vision & Strategic Objectives
+
+The primary mission of **EMV-MCP-AS** is to empower AI agents (Claude Code, Antigravity 2.0 / IDE, Cursor, Codex, ChatGPT) to perform production-grade structural detailing and parametric engineering inside Autodesk Advance Steel.
+
+### Core Objectives:
+1. **Automated Workshop Connection Modeling from Engineering Sources**:
+   - Enable agents to ingest connection calculations and detailing sheets from **PDF calculation reports** (e.g. AISC 358-16 Pre-qualified Connections such as Bolted Flange Plate - BFP), **IDEA StatiCa Connection**, **RAM Connection**, and **AutoCAD DXF**.
+   - Model the exact geometry: beams, columns, top/bottom flange plates, shear tabs, continuity stiffeners, web doubler plates, bolt groups, and edge preparations.
+   - Place all **workshop welds (`kInShop`)** in the exact contact surfaces so Advance Steel merges attached plates into the main member's fabrication assembly (`MainPart`), eliminating orphan single parts and ensuring accurate workshop drawings (`PosNum`, Single Part Marks, Assembly Marks).
+2. **Generative Parametric Structures**:
+   - One-shot generation of complex lattice warehouses and portal frames parameterized from real-world fabrication models (`version1.dwg`).
+3. **Spatial Referencing & BIM Synchronization**:
+   - Parametric 3D structural grids (`Grid1D`) and elevation levels (`LevelObject`) for 2D GA drawings and Revit BIM alignment.
+4. **Detailing Doctor & Quality Assurance**:
+   - Automated detection and repair of detached plates, weld inconsistencies, clash detection, and unnumbered elements.
+5. **Universal Multi-Client MCP Support**:
+   - Native integration across Antigravity, Claude Code, Cursor, Codex, and ChatGPT Desktop.
 
 ```text
 +-----------------------+               +-----------------------------------+

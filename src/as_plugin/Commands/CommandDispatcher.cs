@@ -14,10 +14,11 @@ using AsDocumentManager = Autodesk.AdvanceSteel.DocumentManagement.DocumentManag
 using AsTransaction = Autodesk.AdvanceSteel.CADAccess.Transaction;
 using AsTransactionManager = Autodesk.AdvanceSteel.CADAccess.TransactionManager;
 
-// Advance Steel declares these enums nested inside the class they belong to.
 using eAssemblyLocation = Autodesk.AdvanceSteel.ConstructionTypes.AtomicElement.eAssemblyLocation;
 using eObjectType = Autodesk.AdvanceSteel.CADAccess.FilerObject.eObjectType;
 using eOpenMode = Autodesk.AdvanceSteel.CADAccess.FilerObject.eOpenMode;
+using AsPoint3d = Autodesk.AdvanceSteel.Geometry.Point3d;
+using AsVector3d = Autodesk.AdvanceSteel.Geometry.Vector3d;
 
 namespace EMV.AdvanceSteel.Plugin.Commands
 {
@@ -143,6 +144,25 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             return fallback;
         }
 
+        public int GetInt(string name, int fallback)
+        {
+            if (Body.ValueKind == JsonValueKind.Object
+                && Body.TryGetProperty(name, out var prop)
+                && prop.ValueKind == JsonValueKind.Number
+                && prop.TryGetInt32(out var value))
+            {
+                return value;
+            }
+
+            if (Query.TryGetValue(name, out var raw)
+                && int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+
+            return fallback;
+        }
+
         public bool GetBool(string name, bool fallback)
         {
             if (Body.ValueKind == JsonValueKind.Object
@@ -159,6 +179,58 @@ namespace EMV.AdvanceSteel.Plugin.Commands
                 if (raw == "0") return false;
             }
 
+            return fallback;
+        }
+
+        public List<double> GetDoubleList(string name)
+        {
+            var values = new List<double>();
+
+            if (Body.ValueKind == JsonValueKind.Object
+                && Body.TryGetProperty(name, out var prop)
+                && prop.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in prop.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Number && item.TryGetDouble(out var val))
+                    {
+                        values.Add(val);
+                    }
+                }
+            }
+
+            return values;
+        }
+
+        public AsPoint3d GetPoint3d(string name, AsPoint3d fallback)
+        {
+            if (Body.ValueKind == JsonValueKind.Object
+                && Body.TryGetProperty(name, out var prop)
+                && prop.ValueKind == JsonValueKind.Array)
+            {
+                var coords = new List<double>();
+                foreach (var item in prop.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Number && item.TryGetDouble(out var d)) coords.Add(d);
+                }
+                if (coords.Count == 3) return new AsPoint3d(coords[0], coords[1], coords[2]);
+            }
+            return fallback;
+        }
+
+        public AsVector3d GetVector3d(string name, AsVector3d fallback)
+        {
+            if (Body.ValueKind == JsonValueKind.Object
+                && Body.TryGetProperty(name, out var prop)
+                && prop.ValueKind == JsonValueKind.Array)
+            {
+                var coords = new List<double>();
+                foreach (var item in prop.EnumerateArray())
+                {
+                    if (item.ValueKind == JsonValueKind.Number && item.TryGetDouble(out var d)) coords.Add(d);
+                }
+                if (coords.Count == 3) return new AsVector3d(coords[0], coords[1], coords[2]);
+            }
             return fallback;
         }
 
@@ -371,6 +443,8 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/bolt" => BoltCommandHandler.Create(ctx),
             "elements/poly-beam" => PolyBeamCommandHandler.Create(ctx),
             "elements/portal-frame" => PortalFrameCommandHandler.Create(ctx),
+            "elements/trussed-warehouse" => TrussedWarehouseCommandHandler.CreateTrussedWarehouse(ctx),
+            "elements/engineered-joint" => EngineeredJointCommandHandler.Create(ctx),
             "elements/joint" => JointCommandHandler.Create(ctx),
             "elements/cut" => FeatureCommandHandler.Apply(ctx),
             "elements/modify" => ModifyCommandHandler.Modify(ctx),
@@ -378,6 +452,8 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "assembly/main-part" => AssemblyCommandHandler.InspectMainPart(ctx),
             "assembly/set-main-part" => AssemblyCommandHandler.SetMainPart(ctx),
             "spatial/ucs-grids" => SpatialCommandHandler.GetUcsAndGrids(ctx),
+            "spatial/grid" => SpatialCommandHandler.CreateGrid(ctx),
+            "spatial/level" => SpatialCommandHandler.CreateLevel(ctx),
             "spatial/box" => SpatialCommandHandler.QueryBox(ctx),
             "audit/assembly-integrity" => AuditCommandHandler.AuditAssemblyIntegrity(ctx),
             "audit/clashes" => AuditCommandHandler.DetectClashes(ctx),
@@ -415,6 +491,8 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "elements/bolt",
             "elements/poly-beam",
             "elements/portal-frame",
+            "elements/trussed-warehouse",
+            "elements/engineered-joint",
             "elements/joint",
             "elements/cut",
             "elements/modify",
@@ -422,6 +500,8 @@ namespace EMV.AdvanceSteel.Plugin.Commands
             "assembly/main-part",
             "assembly/set-main-part",
             "spatial/ucs-grids",
+            "spatial/grid",
+            "spatial/level",
             "spatial/box",
             "audit/assembly-integrity",
             "audit/clashes",
