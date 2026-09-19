@@ -56,14 +56,21 @@ def main():
     print(f"    Elements:   {data.get('elements_count')}")
 
     # 2. Coordinate System & Grids
-    print("\n[2/7] Querying UCS & Grids (GET /api/v1/spatial/ucs-grids)...")
+    print("\n[2/9] Querying UCS & Grids (GET /api/v1/spatial/ucs-grids)...")
     ucs_res = call_api("GET", "spatial/ucs-grids")
     if ucs_res.get("success"):
         print(f"[+] Active UCS: {ucs_res['data']['active_ucs']['name']} (is_world={ucs_res['data']['active_ucs']['is_world']})")
         print(f"    Found {ucs_res['data']['grid_axis_count']} grid axes, {ucs_res['data']['level_count']} levels.")
 
-    # 3. Create Left Column
-    print("\n[3/7] Generating Column 1 (HEB300, 0,0,0 -> 0,0,4000)...")
+    # 3. Validate Section in AstorProfiles
+    print("\n[3/9] Validating profile HEB300 (GET /api/v1/elements/validate-section?section_name=HEB300)...")
+    val_res = call_api("GET", "elements/validate-section?section_name=HEB300")
+    if val_res.get("success"):
+        is_valid = val_res["data"]["is_valid"]
+        print(f"[+] Profile HEB300 validation: {'VALID' if is_valid else 'INVALID'} ({val_res['data'].get('message')})")
+
+    # 4. Create Left Column
+    print("\n[4/9] Generating Column 1 (HEB300, 0,0,0 -> 0,0,4000)...")
     col1_res = call_api("POST", "elements/beam", {
         "start_point": [0.0, 0.0, 0.0],
         "end_point": [0.0, 0.0, 4000.0],
@@ -75,8 +82,14 @@ def main():
     col1_handle = col1_res.get("data", {}).get("handle", "N/A")
     print(f"[+] Column 1 created: handle={col1_handle}, length={col1_res.get('data', {}).get('length_mm')} mm")
 
-    # 4. Create Base Plate for Column 1
-    print("\n[4/7] Generating Base Plate (400x400x25 mm)...")
+    # 5. Query Elements by Role
+    print("\n[5/9] Bulk Querying Columns (POST /api/v1/elements/query)...")
+    query_res = call_api("POST", "elements/query", {"model_role": "Column"})
+    if query_res.get("success"):
+        print(f"[+] Found {query_res['data'].get('count')} column(s) matching criteria.")
+
+    # 6. Create Base Plate for Column 1
+    print("\n[6/9] Generating Base Plate (400x400x25 mm)...")
     plate_res = call_api("POST", "elements/plate", {
         "contour_points": [
             [-200.0, -200.0, 0.0],
@@ -91,9 +104,9 @@ def main():
     plate_handle = plate_res.get("data", {}).get("handle", "N/A")
     print(f"[+] Base Plate created: handle={plate_handle}")
 
-    # 5. Create Anchor Bolt Pattern
+    # 7. Create Anchor Bolt Pattern
     if col1_handle != "N/A" and plate_handle != "N/A":
-        print("\n[5/7] Bolting Base Plate to Column (4x M20 DIN 931)...")
+        print("\n[7/9] Bolting Base Plate to Column (4x M20 DIN 931)...")
         bolt_res = call_api("POST", "elements/bolt", {
             "connected_handles": [col1_handle, plate_handle],
             "origin": [0.0, 0.0, 0.0],
@@ -109,8 +122,8 @@ def main():
         })
         print(f"[+] Bolt Pattern created: handle={bolt_res.get('data', {}).get('handle')}, count={bolt_res.get('data', {}).get('count')}")
 
-    # 6. Query Elements in Bounding Box around node
-    print("\n[6/7] Querying node bounding box [-300, -300, -50] to [300, 300, 500]...")
+    # 8. Query Elements in Bounding Box around node
+    print("\n[8/9] Querying node bounding box [-300, -300, -50] to [300, 300, 500]...")
     box_res = call_api("GET", "spatial/box?min_point=-300,-300,-50&max_point=300,300,500")
     if box_res.get("success"):
         count = box_res["data"]["count"]
@@ -118,8 +131,8 @@ def main():
         for elem in box_res["data"]["elements"]:
             print(f"    - [{elem.get('handle')}] {elem.get('type')}: {elem.get('section_name') or elem.get('model_role')}")
 
-    # 7. Viewport Capture
-    print("\n[7/7] Capturing 3D viewport screenshot...")
+    # 9. Viewport Capture
+    print("\n[9/9] Capturing 3D viewport screenshot...")
     vp_res = call_api("GET", "viewport/capture")
     if vp_res.get("success"):
         img_len = len(vp_res["data"].get("image_base64", ""))
