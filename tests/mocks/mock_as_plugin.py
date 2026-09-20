@@ -335,6 +335,26 @@ class MockAdvanceSteelHandler(BaseHTTPRequestHandler):
                     "warnings": [],
                 }
             )
+        elif path == "/api/v1/production/generate-drawings":
+            handles = body_json.get("assembly_handles", ["1B2C", "3D4E"])
+            drawings = [
+                {
+                    "assembly_handle": h,
+                    "drawing_number": f"DWG-{h}-01",
+                    "status": "generated",
+                    "sheet_size": body_json.get("sheet_size", "A3"),
+                    "style": body_json.get("drawing_style", "Standard"),
+                }
+                for h in handles
+            ]
+            self._send_envelope(
+                data={
+                    "requested_count": len(handles),
+                    "generated_count": len(drawings),
+                    "drawings": drawings,
+                    "warnings": [],
+                }
+            )
         elif path == "/api/v1/elements/query":
             mock_elements = [
                 {

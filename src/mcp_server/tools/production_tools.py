@@ -55,15 +55,50 @@ def export_dstv_nc_files(
     return client.post("production/export-nc", payload)
 
 
+def generate_shop_drawings(
+    client: AdvanceSteelIpcClient,
+    assembly_handles: Optional[List[str]] = None,
+    drawing_style: Optional[str] = None,
+    sheet_size: Optional[str] = None,
+    engine_command: Optional[str] = None,
+    prototype_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Generate assembly or single-part shop drawings for numbered parts.
+
+    Optional values are deliberately omitted rather than replaced with client-side
+    defaults.  Advance Steel installations localize drawing styles and prototypes,
+    so the add-in is the only layer that can choose a valid site default.
+    """
+    payload: Dict[str, Any] = {}
+    if assembly_handles is not None:
+        payload["assembly_handles"] = assembly_handles
+    if drawing_style is not None:
+        payload["drawing_style"] = drawing_style
+    if sheet_size is not None:
+        payload["sheet_size"] = sheet_size
+    if engine_command is not None:
+        payload["engine_command"] = engine_command
+    if prototype_path is not None:
+        payload["prototype_path"] = prototype_path
+    return client.post("production/generate-drawings", payload)
+
+
 def get_drawing_status(
     client: AdvanceSteelIpcClient,
     assembly_marks: Optional[List[str]] = None,
+    *,
+    assembly_handle: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Report drawing availability and freshness for numbered assemblies."""
     endpoint = "production/drawing-status"
+    query: List[str] = []
     if assembly_marks is not None:
         encoded_marks = ",".join(urllib.parse.quote(mark, safe="") for mark in assembly_marks)
-        endpoint += f"?assembly_marks={encoded_marks}"
+        query.append(f"assembly_marks={encoded_marks}")
+    if assembly_handle is not None:
+        query.append(f"assembly_handle={urllib.parse.quote(assembly_handle, safe='')}")
+    if query:
+        endpoint += "?" + "&".join(query)
     return client.get(endpoint)
 
 

@@ -5,7 +5,13 @@ import sys
 from typing import Any, Dict, List, Optional
 
 from src.mcp_server.client.ipc_client import AdvanceSteelIpcClient
-from src.mcp_server.tools import diagnostic_tools, modeling_tools, production_tools, scripting_tools
+from src.mcp_server.tools import (
+    diagnostic_tools,
+    ingest_tools,
+    modeling_tools,
+    production_tools,
+    scripting_tools,
+)
 
 # Default IPC connection
 IPC_PORT = int(os.environ.get("AS_MCP_PORT", "5055"))
@@ -14,7 +20,7 @@ client = AdvanceSteelIpcClient(base_url=f"http://{IPC_HOST}:{IPC_PORT}")
 
 try:
     from mcp.server.fastmcp import FastMCP
-    mcp = FastMCP("emv-mcp-as", description="Advance Steel Model Context Protocol Server")
+    mcp = FastMCP("emv-mcp-as", instructions="Advance Steel Model Context Protocol Server")
 
     @mcp.tool()
     def get_active_model_info() -> Dict[str, Any]:
@@ -395,6 +401,97 @@ try:
             bolt_groups=bolt_groups,
             shop_welds=shop_welds,
             verify_assembly=verify_assembly,
+        )
+
+    @mcp.tool()
+    def generate_shop_drawings(
+        assembly_handles: Optional[List[str]] = None,
+        drawing_style: Optional[str] = None,
+        sheet_size: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Generate 2D assembly or single-part shop drawings for numbered parts in Advance Steel."""
+        return production_tools.generate_shop_drawings(
+            client,
+            assembly_handles=assembly_handles,
+            drawing_style=drawing_style,
+            sheet_size=sheet_size,
+        )
+
+    @mcp.tool()
+    def create_prequalified_connection(
+        connection_type: str,
+        beam_handle: str,
+        column_handle: str,
+        beam_section: str = "IPE360",
+        column_section: str = "HEB400",
+        beam_center_z: float = 2500.0,
+        column_face_x: float = 200.0,
+    ) -> Dict[str, Any]:
+        """Create a prequalified connection (BFP, 4E, 4ES, 8ES, SHEAR_TAB) from standard AISC 358-16 recipe catalog."""
+        from src.mcp_server.catalogs.aisc_connections import (
+            build_bfp_recipe,
+            build_extended_end_plate_recipe,
+            build_shear_tab_recipe,
+        )
+        ctype = connection_type.upper().strip()
+        if ctype == "BFP":
+            payload = build_bfp_recipe(
+                beam_handle=beam_handle,
+                column_handle=column_handle,
+                beam_section=beam_section,
+                column_section=column_section,
+                beam_center_z=beam_center_z,
+                column_face_x=column_face_x,
+            )
+        elif ctype in ("4E", "4ES", "8ES"):
+            payload = build_extended_end_plate_recipe(
+                beam_handle=beam_handle,
+                column_handle=column_handle,
+                beam_section=beam_section,
+                column_section=column_section,
+                end_plate_type=ctype,
+                beam_center_z=beam_center_z,
+                column_face_x=column_face_x,
+            )
+        elif ctype in ("SHEAR_TAB", "SHEAR", "TAB"):
+            payload = build_shear_tab_recipe(
+                beam_handle=beam_handle,
+                column_handle=column_handle,
+                beam_section=beam_section,
+                column_section=column_section,
+                beam_center_z=beam_center_z,
+                column_face_x=column_face_x,
+            )
+        else:
+            raise ValueError(f"Unknown prequalified connection type: {connection_type}. Supported: BFP, 4E, 4ES, 8ES, SHEAR_TAB")
+
+        return modeling_tools.model_engineered_connection(
+            client,
+            connection_name=payload["connection_name"],
+            source_system=payload["source_system"],
+            plates=payload["plates"],
+            bolt_groups=payload["bolt_groups"],
+            shop_welds=payload["shop_welds"],
+            verify_assembly=payload["verify_assembly"],
+        )
+
+    @mcp.tool()
+    def ingest_connection_from_document(
+        document_path: str,
+        connection_type: Optional[str] = None,
+        beam_handle: str = "BEAM_01",
+        column_handle: str = "COL_01",
+        model_immediately: bool = False,
+    ) -> Dict[str, Any]:
+        """Ingest an engineering calculation report (PDF) and extract or model its 3D connection in Advance Steel."""
+        from src.mcp_server.tools import ingest_tools
+        return ingest_tools.ingest_connection_from_document(
+            client,
+            document_path=document_path,
+            connection_type=connection_type,
+            beam_handle=beam_handle,
+            column_handle=column_handle,
+            model_immediately=model_immediately,
         )
 
     @mcp.tool()
